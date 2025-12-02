@@ -1,0 +1,780 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      UserRole @default(MEMBER)
+  active    Boolean  @default(true)
+  isPlatformAdmin Boolean @default(false) // Usuário pode acessar a plataforma multitenancy
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  churchId String?
+  church   Church?  @relation(fields: [churchId], references: [id])
+
+  @@map("users")
+}
+
+model Church {
+  id          String   @id @default(cuid())
+  name        String
+  cnpj        String?  @unique
+  address     String?
+  city        String?
+  state       String?
+  zipCode     String?
+  phone       String?
+  email       String?
+  website     String?
+  pastorName  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Multitenancy - Plano da igreja
+  planId      String?
+  plan        Plan?    @relation(fields: [planId], references: [id])
+  planAssignedAt DateTime?
+  planExpiresAt  DateTime?
+
+  users       User[]
+  members     Member[]
+  ministries  Ministry[]
+  events      Event[]
+  finances    Finance[]
+  donations   Donation[]
+  attendances Attendance[]
+  baptisms    Baptism[]
+  discipleships Discipleship[]
+  courses     Course[]
+  certificates Certificate[]
+  payments    Payment[]
+  budgets     Budget[]
+  assets      Asset[]
+  ministrySchedules MinistrySchedule[]
+
+  @@map("churches")
+}
+
+model Member {
+  id          String   @id @default(cuid())
+  name        String
+  email       String?  @unique
+  password    String?  // Senha para login (opcional, pode ser definida depois)
+  phone       String?
+  phone2      String?
+  birthDate   DateTime?
+  address     String?
+  city        String?
+  state       String?
+  zipCode     String?
+  status      MemberStatus @default(ACTIVE)
+  memberSince DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Dados adicionais
+  cpf         String?
+  rg          String?
+  maritalStatus String? // SINGLE, MARRIED, DIVORCED, WIDOWED
+  profession  String?
+  education   String?
+  emergencyContact String?
+  emergencyPhone   String?
+  notes       String?  @db.Text
+
+  // LGPD Compliance
+  dataConsent Boolean  @default(false)
+  consentDate DateTime?
+  anonymized  Boolean  @default(false)
+  anonymizedAt DateTime?
+  deletedAt   DateTime?  // Soft delete
+  retentionUntil DateTime?  // Data limite de retenção
+  cpfEncrypted Boolean @default(false)  // Flag para indicar se CPF está criptografado
+  rgEncrypted Boolean @default(false)  // Flag para indicar se RG está criptografado
+  privacyToken String? @unique  // Token único para acesso público à privacidade (LGPD)
+  privacyTokenExpiresAt DateTime?  // Data de expiração do token de privacidade
+
+  churchId    String
+  church      Church   @relation(fields: [churchId], references: [id])
+
+  donations   Donation[]
+  payments    Payment[]
+  finances    Finance[]      // Receitas associadas ao membro
+  ministries  MemberMinistry[]
+  consents    MemberConsent[]
+  dataRequests DataRequest[]
+  attendances Attendance[]
+  baptisms    Baptism[]
+  discipleships Discipleship[]
+  courses     MemberCourse[]
+  certificates Certificate[]
+  assets      Asset[]  // Bens sob responsabilidade do membro
+
+  @@map("members")
+}
+
+model Ministry {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  leader      String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  churchId    String
+  church      Church   @relation(fields: [churchId], references: [id])
+
+  members     MemberMinistry[]
+  schedules   MinistrySchedule[]
+
+  @@map("ministries")
+}
+
+model MemberMinistry {
+  id        String   @id @default(cuid())
+  memberId  String
+  ministryId String
+  role      String?
+  joinedAt  DateTime @default(now())
+
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  ministry  Ministry @relation(fields: [ministryId], references: [id], onDelete: Cascade)
+  scheduleMembers MinistryScheduleMember[]
+
+  @@unique([memberId, ministryId])
+  @@map("member_ministries")
+}
+
+model MinistrySchedule {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  date        DateTime
+  startTime   String?   // Formato HH:mm
+  endTime     String?   // Formato HH:mm
+  location    String?
+  notes       String?   @db.Text
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  ministryId  String
+  ministry    Ministry @relation(fields: [ministryId], references: [id], onDelete: Cascade)
+  
+  // Membros escalados para esta atividade
+  assignedMembers MinistryScheduleMember[]
+
+  churchId    String
+  church      Church   @relation(fields: [churchId], references: [id])
+
+  @@index([ministryId])
+  @@index([date])
+  @@map("ministry_schedules")
+}
+
+model MinistryScheduleMember {
+  id          String   @id @default(cuid())
+  scheduleId  String
+  schedule    MinistrySchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  
+  memberMinistryId String
+  memberMinistry   MemberMinistry @relation(fields: [memberMinistryId], references: [id], onDelete: Cascade)
+  
+  role        String?  // Função específica nesta escala (ex: "Líder", "Ajudante")
+  confirmed   Boolean   @default(false) // Se o membro confirmou presença
+  confirmedAt DateTime?
+  notified    Boolean   @default(false) // Se o membro foi notificado
+  notifiedAt  DateTime?
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([scheduleId, memberMinistryId])
+  @@index([memberMinistryId])
+  @@map("ministry_schedule_members")
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  date        DateTime
+  location    String?
+  type        EventType
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  churchId    String
+  church      Church   @relation(fields: [churchId], references: [id])
+  attendances Attendance[]
+  certificates Certificate[]
+
+  @@map("events")
+}
+
+model Finance {
+  id          String      @id @default(cuid())
+  description String
+  amount      Decimal     @db.Decimal(10, 2)
+  type        FinanceType
+  category    String?
+  date        DateTime
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Campos para receitas (doações, dízimos, ofertas)
+  donationType DonationType? // TITHE, OFFERING, CONTRIBUTION (apenas para receitas)
+  method       String?       // Método de pagamento (PIX, Cartão, Dinheiro, etc.)
+  memberId     String?       // Membro que fez a doação (opcional)
+  member       Member?       @relation(fields: [memberId], references: [id])
+  paymentId    String?       // ID do pagamento online (se houver)
+  payment      Payment?      @relation("PaymentFinances", fields: [paymentId], references: [id], onDelete: SetNull)
+
+  churchId    String
+  church      Church      @relation(fields: [churchId], references: [id])
+
+  @@index([memberId])
+  @@index([donationType])
+  @@map("finances")
+}
+
+model Donation {
+  id          String   @id @default(cuid())
+  amount      Decimal  @db.Decimal(10, 2)
+  date        DateTime
+  method      String?
+  notes       String?
+  type        DonationType @default(OFFERING) // OFFERING, TITHE, CONTRIBUTION
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  memberId    String?
+  member      Member?  @relation(fields: [memberId], references: [id])
+  churchId    String
+  church      Church   @relation(fields: [churchId], references: [id])
+  paymentId   String?
+  payment     Payment? @relation("PaymentDonations", fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@map("donations")
+}
+
+enum UserRole {
+  ADMIN
+  PASTOR
+  LEADER
+  MEMBER
+}
+
+enum MemberStatus {
+  ACTIVE
+  INACTIVE
+  VISITOR
+  LEADER
+  VOLUNTEER
+}
+
+enum EventType {
+  SERVICE
+  MEETING
+  CONFERENCE
+  OTHER
+}
+
+enum FinanceType {
+  INCOME
+  EXPENSE
+}
+
+enum DonationType {
+  TITHE
+  OFFERING
+  CONTRIBUTION
+}
+
+enum PaymentMethod {
+  PIX
+  CREDIT_CARD
+  DEBIT_CARD
+  BANK_SLIP
+  CASH
+  TRANSFER
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+// LGPD Compliance Models
+model MemberConsent {
+  id          String   @id @default(cuid())
+  memberId    String
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  
+  consentType String   // DATA_PROCESSING, MARKETING, COMMUNICATION
+  granted     Boolean
+  grantedAt   DateTime?
+  revokedAt   DateTime?
+  ipAddress   String?
+  userAgent   String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("member_consents")
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  userEmail   String?
+  action      String   // CREATE, UPDATE, DELETE, VIEW, EXPORT, DELETE_REQUEST
+  entityType  String   // MEMBER, FINANCE, EVENT, etc.
+  entityId    String?
+  description String?
+  ipAddress   String?
+  userAgent   String?
+  metadata    String?  @db.Text // JSON string with additional data
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model DataRequest {
+  id          String   @id @default(cuid())
+  memberId    String
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  
+  requestType String   // EXPORT, DELETE, RECTIFICATION, ACCESS
+  status      String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, REJECTED
+  requestedAt DateTime @default(now())
+  completedAt DateTime?
+  rejectedAt  DateTime?
+  rejectionReason String?
+  
+  // For export requests
+  exportUrl   String?
+  exportExpiresAt DateTime?
+  
+  // For delete requests
+  scheduledDeletionAt DateTime?
+  
+  ipAddress   String?
+  userAgent   String?
+  notes       String?  @db.Text
+
+  @@map("data_requests")
+}
+
+// Controle de Frequência
+model Attendance {
+  id          String   @id @default(cuid())
+  memberId    String
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  eventId     String?
+  event       Event?   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  
+  // Tipo de culto quando não há evento específico
+  serviceType String?  // official, teaching, members
+  
+  date        DateTime @default(now())
+  present     Boolean  @default(true)
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  churchId    String
+  church      Church   @relation(fields: [churchId], references: [id])
+
+  @@unique([memberId, eventId, date])
+  @@index([memberId])
+  @@index([eventId])
+  @@index([date])
+  @@index([serviceType])
+  @@map("attendances")
+}
+
+// Histórico de Batismos
+model Baptism {
+  id          String   @id @default(cuid())
+  memberId    String
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  
+  date        DateTime
+  location    String?
+  minister    String?  // Nome do ministro que batizou
+  notes       String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  churchId    String
+  church      Church   @relation(fields: [churchId], references: [id])
+  certificates Certificate[]
+
+  @@index([memberId])
+  @@index([date])
+  @@map("baptisms")
+}
+
+// Histórico de Discipulados
+model Discipleship {
+  id          String   @id @default(cuid())
+  memberId    String
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  
+  title       String   // Ex: "Discipulado Básico", "Crescimento Espiritual"
+  startDate   DateTime
+  endDate     DateTime?
+  status      String   @default("IN_PROGRESS") // IN_PROGRESS, COMPLETED, ABANDONED
+  discipler   String?  // Nome do discipulador
+  notes       String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  churchId    String
+  church      Church   @relation(fields: [churchId], references: [id])
+
+  @@index([memberId])
+  @@index([status])
+  @@map("discipleships")
+}
+
+// Histórico de Cursos
+model Course {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  duration    Int?     // Duração em horas
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  churchId    String
+  church      Church   @relation(fields: [churchId], references: [id])
+  members     MemberCourse[]
+  certificates Certificate[]
+
+  @@map("courses")
+}
+
+model MemberCourse {
+  id          String   @id @default(cuid())
+  memberId    String
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  startDate   DateTime
+  endDate     DateTime?
+  status      String   @default("IN_PROGRESS") // IN_PROGRESS, COMPLETED, ABANDONED
+  grade       String?  // Nota ou avaliação
+  certificate Boolean  @default(false)
+  notes       String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([memberId, courseId])
+  @@index([memberId])
+  @@index([courseId])
+  @@map("member_courses")
+}
+
+// Sistema de Certificados
+model Certificate {
+  id          String   @id @default(cuid())
+  memberId    String
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  
+  type        String   // BAPTISM, COURSE, EVENT
+  title       String   // Título do certificado
+  description String?  @db.Text
+  
+  // Relações opcionais
+  baptismId   String?
+  baptism     Baptism? @relation(fields: [baptismId], references: [id], onDelete: SetNull)
+  courseId    String?
+  course      Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  eventId     String?
+  event       Event?  @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  
+  // Segurança e validação
+  certificateNumber String @unique // Número único do certificado
+  validationHash    String @unique // Hash para validação
+  qrCodeUrl         String? // URL do QR Code para validação rápida
+  
+  // Datas
+  issuedDate  DateTime @default(now())
+  issuedBy   String?  // Nome de quem emitiu
+  validUntil DateTime? // Data de validade (opcional)
+  
+  // Status
+  active      Boolean  @default(true)
+  revoked     Boolean  @default(false)
+  revokedAt   DateTime?
+  revokedBy   String?
+  revokeReason String? @db.Text
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  churchId    String
+  church      Church   @relation(fields: [churchId], references: [id])
+  
+  // Logs de validação
+  validations CertificateValidation[]
+  
+  @@index([memberId])
+  @@index([certificateNumber])
+  @@index([validationHash])
+  @@index([type])
+  @@map("certificates")
+}
+
+// Logs de validação de certificados
+model CertificateValidation {
+  id            String   @id @default(cuid())
+  certificateId String
+  certificate   Certificate @relation(fields: [certificateId], references: [id], onDelete: Cascade)
+  
+  validatedAt   DateTime @default(now())
+  isValid       Boolean
+  ipAddress     String?
+  userAgent     String?
+  validatedBy   String?  // Nome de quem validou (se autenticado)
+  notes         String?  @db.Text
+  
+  @@index([certificateId])
+  @@index([validatedAt])
+  @@map("certificate_validations")
+}
+
+// Pagamentos Online
+model Payment {
+  id              String        @id @default(cuid())
+  amount          Decimal       @db.Decimal(10, 2)
+  method          PaymentMethod
+  status          PaymentStatus @default(PENDING)
+  donationType    DonationType  @default(OFFERING)
+  
+  // Dados do pagamento
+  gatewayId       String?       // ID do pagamento no gateway
+  gatewayResponse String?       @db.Text // Resposta completa do gateway (JSON)
+  pixCode         String?       @db.Text // Código PIX (QR Code)
+  pixExpiresAt    DateTime?     // Data de expiração do PIX
+  bankSlipUrl     String?       // URL do boleto
+  bankSlipBarcode String?       // Código de barras do boleto
+  bankSlipExpiresAt DateTime?   // Data de vencimento do boleto
+  
+  // Dados do pagador
+  payerName       String?
+  payerEmail      String?
+  payerPhone      String?
+  payerDocument   String?       // CPF/CNPJ
+  
+  // Metadados
+  description     String?
+  metadata        String?       @db.Text // JSON com dados adicionais
+  
+  // Datas
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  paidAt          DateTime?     // Data em que foi pago
+  expiresAt       DateTime?     // Data de expiração do pagamento
+  
+  // Relações
+  memberId        String?
+  member          Member?       @relation(fields: [memberId], references: [id])
+  churchId        String
+  church          Church        @relation(fields: [churchId], references: [id])
+  donations       Donation[]    @relation("PaymentDonations") // Doações associadas
+  finances        Finance[]     @relation("PaymentFinances") // Finanças associadas
+  
+  @@index([memberId])
+  @@index([churchId])
+  @@index([status])
+  @@index([method])
+  @@index([gatewayId])
+  @@index([createdAt])
+  @@map("payments")
+}
+
+// Orçamentos
+model Budget {
+  id              String   @id @default(cuid())
+  name            String   // Nome do orçamento (ex: "Orçamento 2024")
+  description     String?  @db.Text
+  startDate       DateTime
+  endDate         DateTime
+  totalAmount     Decimal  @db.Decimal(10, 2) // Valor total do orçamento
+  spentAmount     Decimal  @default(0) @db.Decimal(10, 2) // Valor gasto até agora
+  category        String?  // Categoria do orçamento (ex: "Manutenção", "Eventos")
+  active          Boolean  @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  churchId        String
+  church          Church   @relation(fields: [churchId], references: [id])
+  
+  @@index([churchId])
+  @@index([startDate, endDate])
+  @@index([active])
+  @@map("budgets")
+}
+
+// Gestão de Patrimônio
+model Asset {
+  id          String   @id @default(cuid())
+  name        String
+  description String?  @db.Text
+  category    AssetCategory
+  type        AssetType
+  brand       String?
+  model       String?
+  serialNumber String? @unique
+  purchaseDate DateTime?
+  purchaseValue Decimal? @db.Decimal(10, 2)
+  currentValue Decimal? @db.Decimal(10, 2)
+  location    String?  // Localização física do bem
+  status      AssetStatus @default(ACTIVE)
+  condition   AssetCondition @default(GOOD)
+  notes       String?  @db.Text
+  
+  // Para imóveis
+  address     String?
+  city        String?
+  state       String?
+  zipCode     String?
+  area        Decimal? @db.Decimal(10, 2) // Área em m²
+  
+  // Responsável pelo bem
+  responsibleId String?
+  responsible   Member? @relation(fields: [responsibleId], references: [id], onDelete: SetNull)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  churchId    String
+  church      Church   @relation(fields: [churchId], references: [id])
+
+  @@index([churchId])
+  @@index([category])
+  @@index([status])
+  @@index([responsibleId])
+  @@map("assets")
+}
+
+enum AssetCategory {
+  EQUIPMENT    // Equipamentos (som, vídeo, etc.)
+  INSTRUMENT   // Instrumentos musicais
+  PROPERTY     // Imóveis
+  FURNITURE    // Mobiliário
+  VEHICLE      // Veículos
+  TECHNOLOGY   // Tecnologia (computadores, tablets, etc.)
+  OTHER        // Outros
+}
+
+enum AssetType {
+  SOUND_SYSTEM     // Sistema de som
+  VIDEO_SYSTEM     // Sistema de vídeo
+  LIGHTING         // Iluminação
+  PIANO            // Piano
+  GUITAR           // Guitarra
+  DRUMS            // Bateria
+  KEYBOARD         // Teclado
+  BUILDING         // Prédio
+  LAND             // Terreno
+  CHAIR            // Cadeira
+  TABLE            // Mesa
+  PEW              // Banco
+  CAR              // Carro
+  VAN              // Van
+  BUS              // Ônibus
+  COMPUTER         // Computador
+  PROJECTOR        // Projetor
+  OTHER            // Outro
+}
+
+enum AssetStatus {
+  ACTIVE      // Ativo/Em uso
+  INACTIVE    // Inativo
+  MAINTENANCE // Em manutenção
+  DISPOSED    // Descartado/Vendido
+  LOST        // Perdido
+}
+
+enum AssetCondition {
+  EXCELLENT   // Excelente
+  GOOD        // Bom
+  REGULAR     // Regular
+  POOR        // Ruim
+  CRITICAL    // Crítico
+}
+
+// Sistema Multitenancy - Módulos e Planos
+model Module {
+  id          String   @id @default(cuid())
+  key         String   @unique // Chave única do módulo (ex: "MEMBERS", "FINANCES")
+  name        String   // Nome do módulo
+  description String?  @db.Text
+  icon        String?  // Nome do ícone (lucide-react)
+  route       String?  // Rota do módulo (ex: "/dashboard/members")
+  active      Boolean  @default(true)
+  order       Int      @default(0) // Ordem de exibição
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  plans       PlanModule[]
+
+  @@map("modules")
+}
+
+model Plan {
+  id          String   @id @default(cuid())
+  key         String   @unique // Chave única do plano (ex: "BASIC", "INTERMEDIATE", "MASTER")
+  name        String   // Nome do plano
+  description String?  @db.Text
+  price       Decimal? @db.Decimal(10, 2) // Preço mensal (opcional)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  modules     PlanModule[]
+  churches    Church[]
+
+  @@map("plans")
+}
+
+model PlanModule {
+  id        String   @id @default(cuid())
+  planId    String
+  plan      Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  moduleId  String
+  module    Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([planId, moduleId])
+  @@map("plan_modules")
+}
+

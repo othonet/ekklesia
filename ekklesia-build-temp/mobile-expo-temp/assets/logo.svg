@@ -1,0 +1,30 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fundo circular com gradiente -->
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A90E2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#357ABD;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Círculo de fundo -->
+  <circle cx="256" cy="256" r="240" fill="url(#gradient)" />
+  
+  <!-- Ícone de cruz estilizada -->
+  <g transform="translate(256, 256)">
+    <!-- Base da cruz -->
+    <rect x="-20" y="-120" width="40" height="240" rx="8" fill="#FFFFFF" />
+    <rect x="-120" y="-20" width="240" height="40" rx="8" fill="#FFFFFF" />
+    
+    <!-- Destaque superior (topo da cruz) -->
+    <circle cx="0" cy="-140" r="25" fill="#FFFFFF" opacity="0.9" />
+    
+    <!-- Sombra interna para profundidade -->
+    <rect x="-18" y="-118" width="36" height="236" rx="6" fill="#4A90E2" opacity="0.3" />
+    <rect x="-118" y="-18" width="236" height="36" rx="6" fill="#4A90E2" opacity="0.3" />
+  </g>
+  
+  <!-- Texto "E" estilizado (opcional, pode ser removido se preferir apenas o ícone) -->
+  <text x="256" y="380" font-family="Arial, sans-serif" font-size="120" font-weight="bold" fill="#FFFFFF" text-anchor="middle" opacity="0.95">E</text>
+</svg>
+

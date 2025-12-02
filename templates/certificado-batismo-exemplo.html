@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificado de Batismo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .certificate-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border: 8px solid #1e3a5f;
+            border-radius: 15px;
+            padding: 60px 50px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Padrão decorativo de fundo */
+        .certificate-container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(30, 58, 95, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(30, 58, 95, 0.03) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        /* Borda decorativa interna */
+        .certificate-container::after {
+            content: '';
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            right: 30px;
+            bottom: 30px;
+            border: 2px solid rgba(30, 58, 95, 0.2);
+            border-radius: 10px;
+            pointer-events: none;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .church-name {
+            font-size: 42px;
+            font-weight: bold;
+            color: #1e3a5f;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .certificate-title {
+            font-size: 28px;
+            color: #2c5282;
+            font-style: italic;
+            margin-bottom: 5px;
+        }
+
+        .certificate-subtitle {
+            font-size: 18px;
+            color: #666;
+            font-weight: normal;
+        }
+
+        .divider {
+            width: 200px;
+            height: 3px;
+            background: linear-gradient(to right, transparent, #1e3a5f, transparent);
+            margin: 30px auto;
+            position: relative;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '✠';
+            position: absolute;
+            top: -12px;
+            font-size: 24px;
+            color: #1e3a5f;
+        }
+
+        .divider::before {
+            left: -40px;
+        }
+
+        .divider::after {
+            right: -40px;
+        }
+
+        .main-content {
+            text-align: center;
+            margin: 50px 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .certificate-text {
+            font-size: 20px;
+            line-height: 1.8;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .member-name {
+            font-size: 36px;
+            font-weight: bold;
+            color: #1e3a5f;
+            display: inline-block;
+            margin: 15px 0;
+            padding: 0 20px;
+            border-bottom: 3px solid #1e3a5f;
+        }
+
+        .baptism-details {
+            font-size: 18px;
+            color: #555;
+            margin-top: 20px;
+            line-height: 1.6;
+        }
+
+        .baptism-date {
+            font-weight: bold;
+            color: #1e3a5f;
+        }
+
+        .baptism-location,
+        .baptism-minister {
+            font-style: italic;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        .footer {
+            margin-top: 60px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .signatures {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 80px;
+            margin-bottom: 40px;
+        }
+
+        .signature-box {
+            text-align: center;
+            flex: 1;
+            max-width: 300px;
+        }
+
+        .signature-line {
+            width: 250px;
+            height: 2px;
+            background: #1e3a5f;
+            margin: 60px auto 10px;
+        }
+
+        .signature-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #1e3a5f;
+            margin-top: 5px;
+        }
+
+        .signature-role {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .validation-section {
+            border-top: 2px dashed #ccc;
+            padding-top: 30px;
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .validation-info {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .validation-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #1e3a5f;
+            margin-bottom: 10px;
+        }
+
+        .validation-details {
+            font-size: 12px;
+            color: #666;
+            font-family: 'Courier New', monospace;
+            line-height: 1.6;
+        }
+
+        .qr-code-container {
+            text-align: center;
+            flex: 0 0 auto;
+        }
+
+        .qr-code-container [data-qrcode],
+        .qr-code-container .certificate-qrcode {
+            display: inline-block;
+            min-width: 120px;
+            min-height: 120px;
+        }
+
+        .qr-code-container svg {
+            display: block;
+            width: 120px;
+            height: 120px;
+            border: 2px solid #ddd;
+            padding: 5px;
+            background: white;
+            border-radius: 4px;
+            margin: 0 auto;
+        }
+
+        .qr-label {
+            font-size: 11px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .security-warning {
+            text-align: center;
+            margin-top: 30px;
+            padding: 15px;
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 5px;
+            font-size: 11px;
+            color: #856404;
+        }
+
+        .security-warning strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        /* Estilos para impressão */
+        @media print {
+            @page {
+                size: A4 landscape;
+                margin: 0;
+            }
+
+            * {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+                background: white;
+                overflow: hidden;
+            }
+
+            .certificate-container {
+                border: 3px solid #1e3a5f;
+                box-shadow: none;
+                page-break-inside: avoid;
+                page-break-after: avoid;
+                page-break-before: avoid;
+                padding: 12px 10px;
+                margin: 0;
+                width: 100%;
+                height: 100vh;
+                max-height: 100vh;
+                box-sizing: border-box;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                overflow: hidden;
+            }
+
+            /* Reduzir tamanhos para caber em uma página */
+            .header {
+                margin-bottom: 8px !important;
+            }
+
+            .church-name {
+                font-size: 26px !important;
+                margin-bottom: 4px !important;
+                letter-spacing: 1px !important;
+            }
+
+            .certificate-title {
+                font-size: 18px !important;
+                margin-bottom: 2px !important;
+            }
+
+            .certificate-subtitle {
+                font-size: 12px !important;
+            }
+
+            .divider {
+                margin: 8px auto !important;
+                width: 150px !important;
+            }
+
+            .divider::before,
+            .divider::after {
+                font-size: 16px !important;
+                top: -8px !important;
+            }
+
+            .divider::before {
+                left: -30px !important;
+            }
+
+            .divider::after {
+                right: -30px !important;
+            }
+
+            .main-content {
+                margin: 12px 0 !important;
+            }
+
+            .member-name {
+                font-size: 22px !important;
+                margin: 6px 0 !important;
+                padding: 0 15px !important;
+            }
+
+            .certificate-text {
+                font-size: 14px !important;
+                line-height: 1.5 !important;
+                margin-bottom: 8px !important;
+            }
+
+            .baptism-details {
+                font-size: 12px !important;
+                margin-top: 6px !important;
+                line-height: 1.4 !important;
+            }
+
+            .footer {
+                margin-top: 12px !important;
+            }
+
+            .signatures {
+                margin-top: 15px !important;
+                margin-bottom: 10px !important;
+            }
+
+            .signature-box {
+                max-width: 250px !important;
+            }
+
+            .signature-line {
+                width: 200px !important;
+                margin: 25px auto 6px !important;
+            }
+
+            .signature-name {
+                font-size: 13px !important;
+            }
+
+            .signature-role {
+                font-size: 11px !important;
+            }
+
+            .validation-section {
+                padding-top: 10px !important;
+                margin-top: 12px !important;
+                flex-wrap: wrap !important;
+            }
+
+            .validation-info {
+                min-width: 200px !important;
+            }
+
+            .validation-title {
+                font-size: 11px !important;
+                margin-bottom: 6px !important;
+            }
+
+            .validation-details {
+                font-size: 10px !important;
+                line-height: 1.4 !important;
+            }
+
+            .qr-code-container svg {
+                width: 80px !important;
+                height: 80px !important;
+            }
+
+            .qr-label {
+                font-size: 9px !important;
+                margin-top: 3px !important;
+            }
+
+            .security-warning {
+                background: #fff3cd;
+                border: 1px solid #ffc107;
+                page-break-inside: avoid;
+                margin-top: 8px !important;
+                padding: 6px !important;
+                font-size: 9px !important;
+            }
+
+            .watermark {
+                font-size: 80px !important;
+            }
+
+            /* Garantir que o QR Code apareça na impressão */
+            .qr-code-container svg {
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+                width: 100px !important;
+                height: 100px !important;
+            }
+
+            /* Ocultar elementos de navegação */
+            .print\\:hidden {
+                display: none !important;
+            }
+
+            /* Garantir que todos os elementos sejam visíveis */
+            .certificate-container * {
+                visibility: visible;
+            }
+
+            /* Evitar quebras de página */
+            .certificate-container,
+            .certificate-container * {
+                page-break-inside: avoid;
+                page-break-after: avoid;
+                page-break-before: avoid;
+            }
+        }
+
+        /* Marca d'água decorativa */
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 120px;
+            color: rgba(30, 58, 95, 0.05);
+            font-weight: bold;
+            z-index: 0;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="certificate-container">
+        <div class="watermark">{{churchName}}</div>
+        
+        <div class="header">
+            <div class="church-name">{{churchName}}</div>
+            <div class="certificate-title">Certificado de Batismo nas Águas</div>
+            <div class="certificate-subtitle">Em Nome do Pai, do Filho e do Espírito Santo</div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="main-content">
+            <div class="certificate-text">
+                Certificamos que
+            </div>
+            
+            <div class="member-name">{{memberName}}</div>
+            
+            <div class="certificate-text">
+                foi batizado(a) nas águas, conforme ordenado por nosso Senhor Jesus Cristo,
+                como testemunho público de sua fé e compromisso com o Evangelho.
+            </div>
+
+            <div class="baptism-details">
+                <div>
+                    Batizado em <span class="baptism-date">{{baptismDate}}</span>
+                </div>
+                <div class="baptism-location">Local: {{baptismLocation}}</div>
+                <div class="baptism-minister">Ministrado por: {{baptismMinister}}</div>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="footer">
+            <div class="signatures">
+                <div class="signature-box">
+                    <div class="signature-line"></div>
+                    <div class="signature-name">{{issuedBy}}</div>
+                    <div class="signature-role">Pastor / Ministro</div>
+                </div>
+                <div class="signature-box">
+                    <div class="signature-line"></div>
+                    <div class="signature-name">{{issuedDate}}</div>
+                    <div class="signature-role">Data de Emissão</div>
+                </div>
+            </div>
+
+            <div class="validation-section">
+                <div class="validation-info">
+                    <div class="validation-title">Validação Online</div>
+                    <div class="validation-details">
+                        <div><strong>Número:</strong> {{certificateNumber}}</div>
+                        <div><strong>Hash:</strong> {{validationHash}}</div>
+                        <div><strong>URL:</strong> {{validationUrl}}</div>
+                    </div>
+                </div>
+                <div class="qr-code-container">
+                    {{qrCode}}
+                    <div class="qr-label">Escaneie para validar</div>
+                </div>
+            </div>
+
+            <div class="security-warning">
+                <strong>⚠️ Aviso de Segurança</strong>
+                Este certificado pode ser validado online. Qualquer alteração neste documento invalida sua autenticidade.
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,92 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { authenticateMember } from '@/lib/auth'
+import { getCorsHeaders } from '@/lib/cors'
+import { hasMobileAppAccess } from '@/lib/module-permissions'
+
+export async function OPTIONS(request: NextRequest) {
+  return NextResponse.json({}, { headers: getCorsHeaders(request) })
+}
+
+export async function POST(request: NextRequest) {
+  const corsHeaders = getCorsHeaders(request)
+  try {
+    // Parse do body
+    let body: any = {}
+    try {
+      body = await request.json()
+      console.log('Body recebido:', { email: body.email, password: body.password ? '***' : 'ausente' })
+    } catch (parseError: any) {
+      console.error('Erro ao parsear body:', parseError.message)
+      return NextResponse.json(
+        { error: 'Erro ao processar requisição. Verifique o formato JSON.' },
+        { 
+          status: 400,
+          headers: corsHeaders,
+        }
+      )
+    }
+
+    const { email, password } = body
+
+    if (!email || !password) {
+      console.log('Email ou senha faltando. Email:', email ? 'presente' : 'ausente', 'Password:', password ? 'presente' : 'ausente')
+      return NextResponse.json(
+        { error: 'Email e senha são obrigatórios' },
+        { 
+          status: 400,
+          headers: corsHeaders,
+        }
+      )
+    }
+
+    console.log('Tentativa de login de membro para:', email)
+
+    const result = await authenticateMember(email, password)
+
+    if (!result) {
+      console.log('Credenciais inválidas para membro:', email)
+      return NextResponse.json(
+        { error: 'Credenciais inválidas' },
+        { 
+          status: 401,
+          headers: corsHeaders,
+        }
+      )
+    }
+
+    console.log('Login bem-sucedido para membro:', email)
+
+    // Verificar se a igreja tem acesso ao app mobile
+    const hasAccess = await hasMobileAppAccess(result.member.churchId)
+    
+    if (!hasAccess) {
+      return NextResponse.json(
+        {
+          error: 'Sua igreja não tem acesso ao aplicativo mobile. Entre em contato com o administrador.',
+        },
+        {
+          status: 403,
+          headers: corsHeaders,
+        }
+      )
+    }
+
+    return NextResponse.json(
+      {
+        token: result.token,
+        member: result.member,
+      },
+      { headers: corsHeaders }
+    )
+  } catch (error: any) {
+    console.error('Erro no login de membro:', error)
+    return NextResponse.json(
+      { error: error.message || 'Erro ao fazer login' },
+        { 
+          status: 500,
+          headers: corsHeaders,
+        }
+    )
+  }
+}
+

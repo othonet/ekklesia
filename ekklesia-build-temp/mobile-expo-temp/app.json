@@ -1,0 +1,57 @@
+{
+  "expo": {
+    "name": "Ekklesia",
+    "slug": "ekklesia-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#4A90E2"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Este app precisa acessar sua câmera para você poder adicionar uma foto ao seu perfil.",
+        "NSPhotoLibraryUsageDescription": "Este app precisa acessar sua galeria de fotos para você poder selecionar uma foto para seu perfil."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.othonet10.ekklesiamobile"
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O app precisa acessar suas fotos para você poder selecionar uma foto de perfil.",
+          "cameraPermission": "O app precisa acessar sua câmera para você poder tirar uma foto de perfil."
+        }
+      ],
+      "expo-splash-screen"
+    ],
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "d6032da4-d67e-4604-936d-36ed65091789"
+      }
+    },
+    "owner": "othonet10"
+  }
+}

@@ -1,0 +1,114 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getCurrentUser, validateRequest, createErrorResponse, createSuccessResponse } from '@/lib/api-helpers'
+import { prisma } from '@/lib/prisma'
+import { createFinanceSchema } from '@/lib/validations'
+
+export async function GET(request: NextRequest) {
+  try {
+    const user = getCurrentUser(request)
+    if (!user || !user.churchId) {
+      return createErrorResponse('Não autorizado', 401)
+    }
+
+    const { searchParams } = new URL(request.url)
+    const page = parseInt(searchParams.get('page') || '1', 10)
+    const limit = parseInt(searchParams.get('limit') || '20', 10)
+    const skip = (page - 1) * limit
+    const type = searchParams.get('type') as 'INCOME' | 'EXPENSE' | null
+
+    const where: any = { churchId: user.churchId }
+    if (type) {
+      where.type = type
+    }
+
+    const [finances, total] = await Promise.all([
+      prisma.finance.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { date: 'desc' },
+        include: {
+          member: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      }),
+      prisma.finance.count({ where }),
+    ])
+
+    // Converter Decimal para número
+    const financesData = finances.map(f => ({
+      ...f,
+      amount: typeof f.amount === 'number' ? f.amount : Number(f.amount),
+    }))
+
+    return createSuccessResponse({
+      data: financesData,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    })
+  } catch (error: any) {
+    return createErrorResponse(error.message || 'Erro ao buscar finanças', 500)
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const user = getCurrentUser(request)
+    if (!user || !user.churchId) {
+      return createErrorResponse('Não autorizado', 401)
+    }
+
+    const body = await request.json()
+    
+    // Validar dados com Zod
+    const validation = validateRequest(createFinanceSchema, body)
+    if (!validation.success) {
+      return validation.error
+    }
+
+    const { description, amount, type, category, date, donationType, method, memberId, paymentId } = validation.data
+
+    const finance = await prisma.finance.create({
+      data: {
+        description,
+        amount: typeof amount === 'number' ? amount : parseFloat(String(amount)),
+        type,
+        category: category && category !== '' ? category : null,
+        date: new Date(date),
+        donationType: donationType && donationType !== '' && donationType !== 'none' ? donationType : null,
+        method: method && method !== '' ? method : null,
+        memberId: memberId && memberId !== '' && memberId !== 'none' ? memberId : null,
+        paymentId: paymentId || null,
+        churchId: user.churchId,
+      },
+      include: {
+        member: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    })
+
+    const financeData = {
+      ...finance,
+      amount: Number(finance.amount),
+    }
+
+    return createSuccessResponse(financeData, 201)
+  } catch (error: any) {
+    return createErrorResponse(error.message || 'Erro ao criar transação financeira', 500)
+  }
+}
+

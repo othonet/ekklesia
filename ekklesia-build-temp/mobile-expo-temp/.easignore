@@ -1,0 +1,76 @@
+# Arquivos e pastas a serem ignorados pelo EAS Build
+
+# Dependências
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Expo
+.expo/
+dist/
+web-build/
+.expo-shared/
+
+# Build artifacts
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.pem
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Pastas problemáticas do Windows (caminhos absolutos)
+**/AppData/
+**/Local/
+**/ElevatedDiagnostics/
+**/Temp/
+**/Temporary/
+*.tmp
+*.temp
+
+# Pastas de build nativas (geradas automaticamente)
+ios/
+android/
+.expo-shared/
+
+# Arquivos de configuração local
+.env*.local
+*.local
+
+# Logs
+*.log
+logs/
+
+# Arquivos temporários
+*.swp
+*.swo
+*~
+.cache/
+.tmp/
+
+# TypeScript
+*.tsbuildinfo
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-*
+
+# Scripts de build
+scripts/
+*.ps1
+*.sh
+
+# Documentação
+*.md
+!README.md
+

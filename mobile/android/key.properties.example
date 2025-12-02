@@ -1,0 +1,16 @@
+# Arquivo de configuração para assinatura do APK
+# Copie este arquivo para android/key.properties e preencha com suas informações
+
+# Senha do keystore
+storePassword=SUA_SENHA_AQUI
+
+# Senha da chave
+keyPassword=SUA_SENHA_AQUI
+
+# Alias da chave (o mesmo usado ao criar o keystore)
+keyAlias=ekklesia
+
+# Caminho para o arquivo keystore
+# Use caminho absoluto ou relativo ao diretório android/
+storeFile=/caminho/para/ekklesia-key.jks
+
