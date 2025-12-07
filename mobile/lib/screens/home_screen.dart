@@ -4,6 +4,9 @@ import 'package:intl/intl.dart';
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
 import '../services/api_service.dart';
+import '../models/member.dart';
+import '../utils/birthday_helper.dart';
+import '../widgets/birthday_modal.dart';
 import 'profile_screen.dart';
 import 'ministries_screen.dart';
 import 'courses_screen.dart';
@@ -11,6 +14,8 @@ import 'certificates_screen.dart';
 import 'events_screen.dart';
 import 'privacy_screen.dart';
 import 'schedule_screen.dart';
+import 'leadership_screen.dart';
+import '../services/api_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,8 +26,11 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  bool _isLeader = false;
+  bool _isLoadingLeader = true;
 
-  final List<Widget> _screens = [
+  // Telas base (sempre disponíveis)
+  final List<Widget> _baseScreens = [
     const DashboardTab(),
     const MinistriesScreen(),
     const CoursesScreen(),
@@ -30,41 +38,130 @@ class _HomeScreenState extends State<HomeScreen> {
     const CertificatesScreen(),
   ];
 
+  // Lista dinâmica de telas baseada no papel do membro
+  List<Widget> get _screens {
+    if (_isLeader) {
+      // Se for líder, substituir Ministérios por Liderança
+      return [
+        _baseScreens[0], // Dashboard
+        const LeadershipScreen(), // Liderança (substitui Ministérios) - criar nova instância
+        _baseScreens[2], // Cursos
+        _baseScreens[3], // Eventos
+        _baseScreens[4], // Certificados
+      ];
+    }
+    return _baseScreens;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLeadership();
+  }
+
+  Future<void> _checkLeadership() async {
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final apiService = ApiService(authService: authProvider.authService);
+      final data = await apiService.checkMinistryLeader();
+      
+      if (mounted) {
+        final wasLeader = _isLeader;
+        setState(() {
+          _isLeader = data['isLeader'] ?? false;
+          _isLoadingLeader = false;
+          
+          // Se o status de líder mudou e estava na tela de Ministérios (índice 1),
+          // ajustar o índice para evitar mostrar a tela errada
+          if (wasLeader != _isLeader && _selectedIndex == 1) {
+            // Se virou líder, já está na posição correta (Liderança)
+            // Se deixou de ser líder, também está na posição correta (Ministérios)
+            // Não precisa ajustar
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLeader = false;
+          _isLoadingLeader = false;
+        });
+      }
+    }
+  }
+
+  List<BottomNavigationBarItem> _buildNavigationItems() {
+    final items = [
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.home),
+        label: 'Início',
+      ),
+    ];
+
+    // Se for líder, mostrar Liderança ao invés de Ministérios
+    if (_isLeader) {
+      items.add(
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.admin_panel_settings),
+          label: 'Liderança',
+        ),
+      );
+    } else {
+      // Se não for líder, mostrar Ministérios
+      items.add(
+        const BottomNavigationBarItem(
+          icon: Icon(Icons.group),
+          label: 'Ministérios',
+        ),
+      );
+    }
+
+    // Adicionar os demais itens
+    items.addAll([
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.school),
+        label: 'Cursos',
+      ),
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.event),
+        label: 'Eventos',
+      ),
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.verified),
+        label: 'Certificados',
+      ),
+    ]);
+
+    return items;
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Ajustar índice selecionado se necessário
+    int adjustedIndex = _selectedIndex;
+    if (adjustedIndex >= _screens.length) {
+      adjustedIndex = 0;
+    }
+
+    // Garantir que estamos exibindo a tela correta baseada no índice
+    // Usar IndexedStack para manter o estado das telas, mas garantir que a correta seja exibida
     return Scaffold(
-      body: _screens[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Início',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.group),
-            label: 'Ministérios',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.school),
-            label: 'Cursos',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.event),
-            label: 'Eventos',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.verified),
-            label: 'Certificados',
-          ),
-        ],
+      body: IndexedStack(
+        index: adjustedIndex,
+        children: _screens,
       ),
+      bottomNavigationBar: _isLoadingLeader
+          ? const SizedBox.shrink()
+          : BottomNavigationBar(
+              currentIndex: adjustedIndex,
+              onTap: (index) {
+                setState(() {
+                  _selectedIndex = index;
+                });
+              },
+              type: BottomNavigationBarType.fixed,
+              items: _buildNavigationItems(),
+            ),
     );
   }
 }
@@ -78,6 +175,7 @@ class DashboardTab extends StatefulWidget {
 
 class _DashboardTabState extends State<DashboardTab> {
   bool _hasTriedLoad = false;
+  bool _hasShownBirthdayModal = false;
 
   @override
   void initState() {
@@ -87,9 +185,63 @@ class _DashboardTabState extends State<DashboardTab> {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       if (authProvider.member == null && !authProvider.isLoading && !_hasTriedLoad) {
         _hasTriedLoad = true;
-        authProvider.loadMember();
+        authProvider.loadMember().then((_) {
+          // Após carregar o membro, verificar aniversário
+          if (mounted && authProvider.member != null && !_hasShownBirthdayModal) {
+            Future.delayed(const Duration(milliseconds: 300), () {
+              if (mounted && authProvider.member != null && !_hasShownBirthdayModal) {
+                _checkAndShowBirthdayModal(authProvider.member!);
+              }
+            });
+          }
+        });
+      } else if (authProvider.member != null && !_hasShownBirthdayModal) {
+        // Se o membro já está carregado, verificar imediatamente
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted && authProvider.member != null && !_hasShownBirthdayModal) {
+            _checkAndShowBirthdayModal(authProvider.member!);
+          }
+        });
       }
     });
+  }
+
+  void _checkAndShowBirthdayModal(Member member) {
+    print('🎂 HomeScreen: Verificando aniversário para ${member.name}');
+    print('   _hasShownBirthdayModal: $_hasShownBirthdayModal');
+    print('   birthDate: ${member.birthDate}');
+    
+    final isBirthday = BirthdayHelper.isBirthdayToday(member);
+    print('   isBirthdayToday retornou: $isBirthday');
+    
+    if (isBirthday && !_hasShownBirthdayModal) {
+      print('🎉 Mostrando modal de aniversário!');
+      _hasShownBirthdayModal = true;
+      // Aguardar um pouco para a tela carregar completamente
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (!mounted) {
+          print('⚠️ Widget não está montado, cancelando modal');
+          return;
+        }
+        if (_hasShownBirthdayModal == false) {
+          print('⚠️ Flag de modal já foi resetada, cancelando');
+          return;
+        }
+        print('✅ Exibindo modal de aniversário');
+        final verse = BirthdayHelper.getRandomBirthdayVerse();
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => BirthdayModal(
+            memberName: member.name,
+            verse: verse.verse,
+            verseReference: verse.reference,
+          ),
+        );
+      });
+    } else {
+      print('❌ Não mostrando modal: isBirthday=$isBirthday, _hasShownBirthdayModal=$_hasShownBirthdayModal');
+    }
   }
 
   @override
@@ -98,6 +250,19 @@ class _DashboardTabState extends State<DashboardTab> {
     final member = authProvider.member;
     final isLoading = authProvider.isLoading;
     final error = authProvider.error;
+
+    // Verificar aniversário quando o membro for carregado
+    if (member != null && !_hasShownBirthdayModal) {
+      // Usar SchedulerBinding para garantir que o contexto está pronto
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Adicionar um pequeno delay adicional para garantir que o contexto está totalmente pronto
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted && member != null && !_hasShownBirthdayModal) {
+            _checkAndShowBirthdayModal(member);
+          }
+        });
+      });
+    }
 
     if (isLoading && member == null) {
       return const Scaffold(
@@ -350,38 +515,49 @@ class _DashboardTabState extends State<DashboardTab> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                // Placeholder - será preenchido quando a tela de escalas for criada
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.calendar_today,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Suas escalas',
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Toque para ver suas escalas de ministério',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ],
+                // Card de escalas clicável
+                InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ScheduleScreen(),
+                      ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.calendar_today,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
-                        ),
-                        Icon(
-                          Icons.chevron_right,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ],
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Suas escalas',
+                                  style: Theme.of(context).textTheme.titleMedium,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Toque para ver suas escalas de ministério',
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            Icons.chevron_right,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

@@ -118,7 +118,12 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
-        return data.map((json) => MinistryInfo.fromJson(json)).toList();
+        final ministries = data.map((json) => MinistryInfo.fromJson(json)).toList();
+        // Debug: verificar se leader está sendo parseado
+        for (var ministry in ministries) {
+          print('Ministry: ${ministry.name}, Leader: ${ministry.leader}');
+        }
+        return ministries;
       }
       throw Exception('Erro ao buscar ministérios');
     } catch (e) {
@@ -220,19 +225,45 @@ class ApiService {
   /// Confirma ou cancela presença em um evento
   Future<Map<String, dynamic>> confirmEventAttendance(String eventId, bool willAttend) async {
     try {
+      // Garantir que a URL base está atualizada
+      await _initializeDio();
+      
       final headers = await _authService.getAuthHeaders();
+      final endpoint = ApiConfig.eventAttendance(eventId);
+      final fullUrl = '${_dio.options.baseUrl}$endpoint';
+      
+      print('📤 Confirmando presença no evento:');
+      print('   Event ID: $eventId');
+      print('   Will Attend: $willAttend');
+      print('   URL Base: ${_dio.options.baseUrl}');
+      print('   Endpoint: $endpoint');
+      print('   URL Completa: $fullUrl');
+      print('   Headers: ${headers.containsKey('Authorization') ? 'Token presente' : 'Token ausente'}');
+      
       final response = await _dio.post(
-        ApiConfig.eventAttendance(eventId),
+        endpoint,
         data: {'willAttend': willAttend},
-        options: Options(headers: headers),
+        options: Options(
+          headers: headers,
+          contentType: 'application/json',
+        ),
       );
+
+      print('✅ Resposta recebida: ${response.statusCode}');
+      print('   Data: ${response.data}');
 
       if (response.statusCode == 200) {
         return response.data as Map<String, dynamic>;
       }
       throw Exception('Erro ao confirmar presença');
     } catch (e) {
+      print('❌ Erro ao confirmar presença:');
+      print('   Tipo: ${e.runtimeType}');
+      print('   Mensagem: ${e.toString()}');
       if (e is DioException) {
+        print('   Status: ${e.response?.statusCode}');
+        print('   Response: ${e.response?.data}');
+        print('   Request: ${e.requestOptions.uri}');
         throw _handleDioError(e);
       }
       throw Exception('Erro ao confirmar presença: ${e.toString()}');
@@ -258,6 +289,186 @@ class ApiService {
         throw _handleDioError(e);
       }
       throw Exception('Erro ao atualizar dados: ${e.toString()}');
+    }
+  }
+
+  /// Verifica se o membro é líder de algum ministério
+  Future<Map<String, dynamic>> checkMinistryLeader() async {
+    try {
+      await _initializeDio();
+      final headers = await _authService.getAuthHeaders();
+      final response = await _dio.get(
+        ApiConfig.ministryLeader,
+        options: Options(headers: headers),
+      );
+
+      if (response.statusCode == 200) {
+        return response.data;
+      }
+      throw Exception('Erro ao verificar líder de ministério');
+    } catch (e) {
+      if (e is DioException) {
+        throw _handleDioError(e);
+      }
+      throw Exception('Erro ao verificar líder: ${e.toString()}');
+    }
+  }
+
+  /// Busca ministérios liderados pelo membro
+  Future<Map<String, dynamic>> getLeadershipMinistries() async {
+    try {
+      await _initializeDio();
+      final headers = await _authService.getAuthHeaders();
+      final response = await _dio.get(
+        ApiConfig.ministryLeader,
+        options: Options(headers: headers),
+      );
+
+      if (response.statusCode == 200) {
+        return response.data;
+      }
+      throw Exception('Erro ao buscar ministérios de liderança');
+    } catch (e) {
+      if (e is DioException) {
+        throw _handleDioError(e);
+      }
+      throw Exception('Erro ao buscar ministérios: ${e.toString()}');
+    }
+  }
+
+  /// Lista membros de um ministério (apenas para líder)
+  Future<Map<String, dynamic>> getMinistryMembers(String ministryId) async {
+    try {
+      await _initializeDio();
+      final headers = await _authService.getAuthHeaders();
+      final response = await _dio.get(
+        ApiConfig.leadershipMinistryMembers(ministryId),
+        options: Options(headers: headers),
+      );
+
+      if (response.statusCode == 200) {
+        return response.data;
+      }
+      throw Exception('Erro ao buscar membros do ministério');
+    } catch (e) {
+      if (e is DioException) {
+        throw _handleDioError(e);
+      }
+      throw Exception('Erro ao buscar membros: ${e.toString()}');
+    }
+  }
+
+  /// Adiciona um membro ao ministério (apenas para líder)
+  Future<Map<String, dynamic>> addMemberToMinistry(String ministryId, String memberId, {String? role}) async {
+    try {
+      await _initializeDio();
+      final headers = await _authService.getAuthHeaders();
+      final response = await _dio.post(
+        ApiConfig.leadershipMinistryMembers(ministryId),
+        data: {
+          'memberId': memberId,
+          if (role != null && role.isNotEmpty) 'role': role,
+        },
+        options: Options(headers: headers),
+      );
+
+      if (response.statusCode == 201) {
+        return response.data;
+      }
+      throw Exception('Erro ao adicionar membro ao ministério');
+    } catch (e) {
+      if (e is DioException) {
+        throw _handleDioError(e);
+      }
+      throw Exception('Erro ao adicionar membro: ${e.toString()}');
+    }
+  }
+
+  /// Remove um membro do ministério (apenas para líder)
+  Future<void> removeMemberFromMinistry(String ministryId, String memberId) async {
+    try {
+      await _initializeDio();
+      final headers = await _authService.getAuthHeaders();
+      final response = await _dio.delete(
+        ApiConfig.leadershipMinistryMember(ministryId, memberId),
+        options: Options(headers: headers),
+      );
+
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw Exception('Erro ao remover membro do ministério');
+      }
+    } catch (e) {
+      if (e is DioException) {
+        throw _handleDioError(e);
+      }
+      throw Exception('Erro ao remover membro: ${e.toString()}');
+    }
+  }
+
+  /// Cria uma nova escala para o ministério (apenas para líder)
+  Future<Map<String, dynamic>> createMinistrySchedule(String ministryId, Map<String, dynamic> scheduleData) async {
+    try {
+      await _initializeDio();
+      final headers = await _authService.getAuthHeaders();
+      final response = await _dio.post(
+        ApiConfig.leadershipMinistrySchedules(ministryId),
+        data: scheduleData,
+        options: Options(headers: headers),
+      );
+
+      if (response.statusCode == 201) {
+        return response.data;
+      }
+      throw Exception('Erro ao criar escala');
+    } catch (e) {
+      if (e is DioException) {
+        throw _handleDioError(e);
+      }
+      throw Exception('Erro ao criar escala: ${e.toString()}');
+    }
+  }
+
+  /// Busca membros disponíveis para adicionar ao ministério (apenas para líder)
+  Future<Map<String, dynamic>> getAvailableMembersForMinistry(String ministryId) async {
+    try {
+      await _initializeDio();
+      final headers = await _authService.getAuthHeaders();
+      final response = await _dio.get(
+        ApiConfig.leadershipMinistryAvailableMembers(ministryId),
+        options: Options(headers: headers),
+      );
+
+      if (response.statusCode == 200) {
+        return response.data;
+      }
+      throw Exception('Erro ao buscar membros disponíveis');
+    } catch (e) {
+      if (e is DioException) {
+        throw _handleDioError(e);
+      }
+      throw Exception('Erro ao buscar membros disponíveis: ${e.toString()}');
+    }
+  }
+
+  /// Busca escalas de um ministério (apenas para líder)
+  Future<Map<String, dynamic>> getMinistrySchedules(String ministryId) async {
+    try {
+      await _initializeDio();
+      final headers = await _authService.getAuthHeaders();
+      final response = await _dio.get(
+        ApiConfig.leadershipMinistrySchedules(ministryId),
+        options: Options(headers: headers),
+      );
+
+      if (response.statusCode == 200) {
+        return response.data;
+      }
+      throw Exception('Erro ao buscar escalas do ministério');
+    } catch (e) {
+      if (e is DioException) {
+        throw _handleDioError(e);
+      }
+      throw Exception('Erro ao buscar escalas: ${e.toString()}');
     }
   }
 

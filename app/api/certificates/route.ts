@@ -2,12 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
 import { generateCertificateNumber, generateValidationHash, generateQRCodeUrl } from '@/lib/certificate'
+import { checkPermission } from '@/lib/permissions-helpers'
 
 export async function GET(request: NextRequest) {
   try {
     const user = getCurrentUser(request)
     if (!user || !user.churchId) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    }
+
+    // Verificar permissão para ler certificados
+    if (!(await checkPermission(request, 'certificates:read'))) {
+      return NextResponse.json({ error: 'Acesso negado. Você não tem permissão para visualizar certificados.' }, { status: 403 })
     }
 
     // Verificar se prisma.certificate está disponível
@@ -88,6 +94,11 @@ export async function POST(request: NextRequest) {
     const user = getCurrentUser(request)
     if (!user || !user.churchId) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    }
+
+    // Verificar permissão para criar certificados
+    if (!(await checkPermission(request, 'certificates:write'))) {
+      return NextResponse.json({ error: 'Acesso negado. Você não tem permissão para criar certificados.' }, { status: 403 })
     }
 
     // Verificar se prisma.certificate está disponível

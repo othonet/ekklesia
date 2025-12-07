@@ -2,12 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser, validateRequest, createErrorResponse, createSuccessResponse } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
 import { createFinanceSchema } from '@/lib/validations'
+import { checkPermission } from '@/lib/permissions-helpers'
 
 export async function GET(request: NextRequest) {
   try {
     const user = getCurrentUser(request)
     if (!user || !user.churchId) {
       return createErrorResponse('Não autorizado', 401)
+    }
+
+    // Verificar permissão para ler finanças
+    if (!(await checkPermission(request, 'finances:read'))) {
+      return createErrorResponse('Acesso negado. Você não tem permissão para visualizar finanças.', 403)
     }
 
     const { searchParams } = new URL(request.url)
@@ -65,6 +71,11 @@ export async function POST(request: NextRequest) {
     const user = getCurrentUser(request)
     if (!user || !user.churchId) {
       return createErrorResponse('Não autorizado', 401)
+    }
+
+    // Verificar permissão para criar finanças
+    if (!(await checkPermission(request, 'finances:write'))) {
+      return createErrorResponse('Acesso negado. Você não tem permissão para criar transações financeiras.', 403)
     }
 
     const body = await request.json()

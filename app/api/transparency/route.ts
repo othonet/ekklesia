@@ -1,15 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getCorsHeaders } from '@/lib/cors'
+import { checkTransparencyAccess, checkPermission } from '@/lib/permissions-helpers'
 
-// Portal de transparência - pode ser público ou requerer autenticação básica
+export async function OPTIONS(request: NextRequest) {
+  return NextResponse.json({}, { headers: getCorsHeaders(request) })
+}
+
+// Portal de transparência - acesso para:
+// 1. Usuários autenticados com permissão transparency:read
+// 2. Membros ativos que são dizimistas ou ofertantes (via token JWT)
 export async function GET(request: NextRequest) {
   try {
+    const corsHeaders = getCorsHeaders(request)
+    
     // Verificar se prisma está inicializado
     if (!prisma) {
       console.error('Prisma não está inicializado')
       return NextResponse.json(
         { error: 'Erro de configuração do banco de dados. Por favor, execute: npm run db:generate' },
-        { status: 500 }
+        { status: 500, headers: corsHeaders }
       )
     }
 
@@ -18,7 +28,18 @@ export async function GET(request: NextRequest) {
     const period = searchParams.get('period') || 'month'
 
     if (!churchId) {
-      return NextResponse.json({ error: 'ID da igreja é obrigatório' }, { status: 400 })
+      return NextResponse.json({ error: 'ID da igreja é obrigatório' }, { status: 400, headers: corsHeaders })
+    }
+
+    // Verificar acesso: usuário autenticado ou membro dizimista/ofertante
+    const hasUserAccess = await checkPermission(request, 'transparency:read')
+    const hasMemberAccess = await checkTransparencyAccess(request)
+    
+    if (!hasUserAccess && !hasMemberAccess) {
+      return NextResponse.json(
+        { error: 'Acesso negado. Apenas membros ativos dizimistas ou ofertantes podem acessar o Portal de Transparência.' },
+        { status: 403, headers: corsHeaders }
+      )
     }
 
     const now = new Date()
@@ -54,7 +75,7 @@ export async function GET(request: NextRequest) {
     })
 
     if (!church) {
-      return NextResponse.json({ error: 'Igreja não encontrada' }, { status: 404 })
+      return NextResponse.json({ error: 'Igreja não encontrada' }, { status: 404, headers: corsHeaders })
     }
 
     // Buscar todas as transações financeiras (tudo está unificado em Finance)
@@ -157,7 +178,7 @@ export async function GET(request: NextRequest) {
           ...data,
         })),
       lastUpdated: new Date().toISOString(),
-    })
+    }, { headers: corsHeaders })
   } catch (error: any) {
     console.error('Erro ao gerar relatório de transparência:', error)
     
@@ -175,7 +196,7 @@ export async function GET(request: NextRequest) {
         error: errorMessage,
         details: process.env.NODE_ENV === 'development' ? error.stack : undefined
       },
-      { status: 500 }
+      { status: 500, headers: getCorsHeaders(request) }
     )
   }
 }

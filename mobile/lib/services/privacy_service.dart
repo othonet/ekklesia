@@ -2,16 +2,25 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import '../config/api_config.dart';
 import 'auth_service.dart';
+import 'config_service.dart';
 
 class PrivacyService {
-  final Dio _dio;
+  Dio _dio;
   final AuthService _authService;
 
   PrivacyService({
     Dio? dio,
     required AuthService authService,
-  })  : _dio = dio ?? Dio(BaseOptions(baseUrl: ApiConfig.baseUrl)),
-        _authService = authService;
+  })  : _dio = dio ?? Dio(BaseOptions(baseUrl: ApiConfig.defaultBaseUrl)),
+        _authService = authService {
+    _initializeDio();
+  }
+
+  /// Inicializa o Dio com a URL salva
+  Future<void> _initializeDio() async {
+    final baseUrl = await ConfigService.getApiBaseUrl();
+    _dio.options.baseUrl = baseUrl;
+  }
 
   /// Obtém o status do consentimento
   Future<Map<String, dynamic>> getConsentStatus() async {

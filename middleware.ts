@@ -21,7 +21,11 @@ async function verifyToken(token: string): Promise<JWTPayload | null> {
     const { payload } = await jwtVerify(token, secret)
     return payload as JWTPayload
   } catch (error: any) {
-    console.error('Erro ao verificar token no middleware:', error.message)
+    // Não logar erros de token expirado ou inválido repetidamente
+    // Apenas logar se for um erro inesperado
+    if (error.code !== 'ERR_JWT_EXPIRED' && error.code !== 'ERR_JWT_INVALID') {
+      console.error('Erro ao verificar token no middleware:', error.message)
+    }
     return null
   }
 }
@@ -106,6 +110,17 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
     // A verificação detalhada de isPlatformAdmin será feita nas APIs
+  }
+
+  // Verificar permissões para rotas do dashboard baseado no role
+  // Nota: Verificação detalhada será feita nas APIs e componentes
+  // Aqui apenas verificamos roles básicos
+  if (isDashboardRoute) {
+    const allowedRoles = ['ADMIN', 'PASTOR_PRESIDENTE', 'SECRETARIO', 'TESOUREIRO', 'PASTOR', 'LEADER']
+    if (!allowedRoles.includes(payload.role)) {
+      console.log('Middleware: Acesso negado - role não permitido', payload.role)
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
   }
 
   console.log('Middleware: Token válido para', request.nextUrl.pathname, 'Usuário:', payload.email, 'Role:', payload.role, 'Cookie:', cookieName)

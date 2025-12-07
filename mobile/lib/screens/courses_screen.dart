@@ -130,7 +130,10 @@ class _CoursesScreenState extends State<CoursesScreen> {
                                       Chip(
                                         label: Text(
                                           _getStatusLabel(course.status),
-                                          style: const TextStyle(fontSize: 12),
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Theme.of(context).colorScheme.onSurface,
+                                          ),
                                         ),
                                         padding: EdgeInsets.zero,
                                       ),

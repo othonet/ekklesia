@@ -1,16 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCurrentUser, validateRequest, createErrorResponse, createSuccessResponse } from '@/lib/api-helpers'
+import { getCurrentUser, validateRequest, createErrorResponse, createSuccessResponse, checkSystemEnabled } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
 import { encrypt } from '@/lib/encryption'
 import { notifyConsentRequired } from '@/lib/notifications'
 import { createMemberSchema } from '@/lib/validations'
+import { checkPermission } from '@/lib/permissions-helpers'
 
 export async function GET(request: NextRequest) {
   try {
+    // Verificar se o sistema está habilitado
+    const systemCheck = await checkSystemEnabled(request)
+    if (systemCheck) return systemCheck
+
     const user = getCurrentUser(request)
     
     if (!user || !user.churchId) {
       return createErrorResponse('Não autorizado', 401)
+    }
+
+    // Verificar permissão para ler membros
+    if (!(await checkPermission(request, 'members:read'))) {
+      return createErrorResponse('Acesso negado. Você não tem permissão para visualizar membros.', 403)
     }
 
     const { searchParams } = new URL(request.url)
@@ -93,6 +103,11 @@ export async function POST(request: NextRequest) {
       return createErrorResponse('Não autorizado', 401)
     }
 
+    // Verificar permissão para criar membros
+    if (!(await checkPermission(request, 'members:write'))) {
+      return createErrorResponse('Acesso negado. Você não tem permissão para criar membros.', 403)
+    }
+
     const body = await request.json()
     
     // Validar dados com Zod
@@ -118,7 +133,24 @@ export async function POST(request: NextRequest) {
         email: validatedData.email || null,
         phone: validatedData.phone || null,
         phone2: validatedData.phone2 || null,
-        birthDate: validatedData.birthDate ? new Date(validatedData.birthDate) : null,
+        birthDate: validatedData.birthDate ? (() => {
+          // Criar data como UTC para evitar problemas de timezone
+          // Se vier como string YYYY-MM-DD, criar como UTC
+          const dateStr = validatedData.birthDate
+          if (typeof dateStr === 'string' && dateStr.includes('-')) {
+            const [year, month, day] = dateStr.split('T')[0].split('-').map(Number)
+            return new Date(Date.UTC(year, month - 1, day))
+          }
+          // Se vier como string DD/MM/YYYY, converter para UTC
+          if (typeof dateStr === 'string' && dateStr.includes('/')) {
+            const [day, month, year] = dateStr.split('/').map(Number)
+            return new Date(Date.UTC(year, month - 1, day))
+          }
+          // Caso padrão
+          const date = new Date(dateStr)
+          // Normalizar para UTC meia-noite
+          return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
+        })() : null,
         address: validatedData.address || null,
         city: validatedData.city || null,
         state: validatedData.state || null,

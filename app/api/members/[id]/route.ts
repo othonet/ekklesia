@@ -117,6 +117,11 @@ export async function PUT(
 
     const validatedData = validation.data
 
+    console.log('📝 Dados validados recebidos:', {
+      birthDate: validatedData.birthDate,
+      birthDateType: typeof validatedData.birthDate,
+    })
+
     const resolvedParams = await Promise.resolve(params)
     const member = await prisma.member.findFirst({
       where: {
@@ -133,6 +138,13 @@ export async function PUT(
       )
     }
 
+    console.log('👤 Membro atual (antes da atualização):', {
+      id: member.id,
+      name: member.name,
+      birthDate: member.birthDate,
+      birthDateType: member.birthDate ? typeof member.birthDate : 'null',
+    })
+
     // Criptografar CPF e RG se fornecidos
     const encryptedCpf = validatedData.cpf ? encrypt(validatedData.cpf) : member.cpf
     const encryptedRg = validatedData.rg ? encrypt(validatedData.rg) : member.rg
@@ -144,6 +156,71 @@ export async function PUT(
       ? new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000) // 5 anos
       : member.retentionUntil
 
+    // Processar birthDate corretamente
+    let processedBirthDate = member.birthDate
+    if (validatedData.birthDate !== undefined && validatedData.birthDate !== null) {
+      if (validatedData.birthDate === '') {
+        // Se enviar string vazia, remover a data
+        processedBirthDate = null
+        console.log('🗑️  Data de nascimento removida (string vazia)')
+      } else {
+        // Converter para Date
+        // Tentar diferentes formatos de data
+        let dateObj: Date | null = null
+        
+        // Criar data como UTC para evitar problemas de timezone
+        // Se já for uma string ISO (YYYY-MM-DD ou YYYY-MM-DDTHH:mm:ss)
+        if (typeof validatedData.birthDate === 'string' && validatedData.birthDate.includes('-')) {
+          const dateStr = validatedData.birthDate.split('T')[0] // Pegar apenas a parte da data
+          const [year, month, day] = dateStr.split('-').map(Number)
+          dateObj = new Date(Date.UTC(year, month - 1, day))
+        } 
+        // Se for formato DD/MM/YYYY
+        else if (typeof validatedData.birthDate === 'string' && validatedData.birthDate.includes('/')) {
+          const parts = validatedData.birthDate.split('/')
+          if (parts.length === 3) {
+            // DD/MM/YYYY - criar como UTC para evitar mudança de dia
+            const day = parseInt(parts[0], 10)
+            const month = parseInt(parts[1], 10) - 1 // Mês é 0-indexed
+            const year = parseInt(parts[2], 10)
+            dateObj = new Date(Date.UTC(year, month, day))
+            console.log('📅 Data parseada de DD/MM/YYYY (como UTC):', {
+              input: validatedData.birthDate,
+              day,
+              month: month + 1,
+              year,
+              utc: dateObj.toISOString(),
+            })
+          }
+        } 
+        // Tentar como Date direto e normalizar para UTC
+        else {
+          const tempDate = new Date(validatedData.birthDate)
+          // Normalizar para UTC meia-noite
+          dateObj = new Date(Date.UTC(
+            tempDate.getUTCFullYear(),
+            tempDate.getUTCMonth(),
+            tempDate.getUTCDate()
+          ))
+        }
+        
+        if (dateObj && !isNaN(dateObj.getTime())) {
+          processedBirthDate = dateObj
+          console.log('✅ Data de nascimento processada:', {
+            original: validatedData.birthDate,
+            processed: processedBirthDate,
+            iso: dateObj.toISOString(),
+            local: dateObj.toLocaleDateString('pt-BR'),
+            day: dateObj.getDate(),
+            month: dateObj.getMonth() + 1,
+            year: dateObj.getFullYear(),
+          })
+        } else {
+          console.error('❌ Data inválida:', validatedData.birthDate)
+        }
+      }
+    }
+
     const updated = await prisma.member.update({
       where: { id: resolvedParams.id },
       data: {
@@ -151,7 +228,7 @@ export async function PUT(
         email: validatedData.email ?? member.email,
         phone: validatedData.phone ?? member.phone,
         phone2: validatedData.phone2 ?? member.phone2,
-        birthDate: validatedData.birthDate ? new Date(validatedData.birthDate) : member.birthDate,
+        birthDate: processedBirthDate,
         address: validatedData.address ?? member.address,
         city: validatedData.city ?? member.city,
         state: validatedData.state ?? member.state,
@@ -169,6 +246,13 @@ export async function PUT(
         notes: validatedData.notes ?? member.notes,
         retentionUntil,
       },
+    })
+
+    console.log('✅ Membro atualizado:', {
+      id: updated.id,
+      name: updated.name,
+      birthDate: updated.birthDate,
+      birthDateLocal: updated.birthDate ? new Date(updated.birthDate).toLocaleDateString('pt-BR') : null,
     })
 
     await createAuditLog({

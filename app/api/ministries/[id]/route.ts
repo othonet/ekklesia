@@ -15,6 +15,13 @@ export async function GET(
     const ministry = await prisma.ministry.findFirst({
       where: { id: params.id, churchId: user.churchId },
       include: {
+        leader: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
         members: {
           include: {
             member: {
@@ -50,7 +57,7 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { name, description, leader, active } = body
+    const { name, description, leaderId, active } = body
 
     const ministry = await prisma.ministry.findFirst({
       where: { id: params.id, churchId: user.churchId },
@@ -60,9 +67,41 @@ export async function PUT(
       return NextResponse.json({ error: 'Ministério não encontrado' }, { status: 404 })
     }
 
+    // Validar que o líder é um membro cadastrado da igreja
+    if (leaderId) {
+      const leaderMember = await prisma.member.findFirst({
+        where: {
+          id: leaderId,
+          churchId: user.churchId,
+          deletedAt: null,
+        },
+      })
+
+      if (!leaderMember) {
+        return NextResponse.json(
+          { error: 'Líder deve ser um membro cadastrado da igreja' },
+          { status: 400 }
+        )
+      }
+    }
+
     const updated = await prisma.ministry.update({
       where: { id: params.id },
-      data: { name, description, leader, active },
+      data: {
+        name,
+        description,
+        leaderId: leaderId || null,
+        active,
+      },
+      include: {
+        leader: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
     })
 
     return NextResponse.json(updated)

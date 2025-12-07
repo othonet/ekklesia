@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken, type JWTPayload } from '@/lib/auth'
 import { ZodError } from 'zod'
+import { isSystemEnabled } from './church-status'
 
 export function getCurrentUser(request: NextRequest): JWTPayload | null {
-  const token = request.cookies.get('token')?.value || 
+  // Tentar obter token dos cookies corretos primeiro
+  const token = request.cookies.get('church_token')?.value || 
+                request.cookies.get('platform_token')?.value ||
+                request.cookies.get('token')?.value || // Fallback para compatibilidade
                 request.headers.get('authorization')?.replace('Bearer ', '')
 
   if (!token) {
@@ -11,6 +15,32 @@ export function getCurrentUser(request: NextRequest): JWTPayload | null {
   }
 
   return verifyToken(token)
+}
+
+/**
+ * Verifica se o sistema está habilitado para o usuário atual
+ * Retorna erro se o sistema estiver bloqueado
+ */
+export async function checkSystemEnabled(request: NextRequest): Promise<NextResponse | null> {
+  const user = getCurrentUser(request)
+  
+  if (!user || !user.churchId) {
+    return null // Deixa outras verificações tratarem
+  }
+
+  const enabled = await isSystemEnabled(user.churchId)
+  
+  if (!enabled) {
+    return NextResponse.json(
+      { 
+        error: 'Sistema bloqueado. Entre em contato com o administrador da plataforma.',
+        blocked: true,
+      },
+      { status: 403 }
+    )
+  }
+
+  return null
 }
 
 export function getAuthHeaders(): HeadersInit {

@@ -3,6 +3,7 @@ import { getCurrentUser, validateRequest, createErrorResponse, createSuccessResp
 import { prisma } from '@/lib/prisma'
 import { createAssetSchema } from '@/lib/validations'
 import { createAuditLog } from '@/lib/audit'
+import { checkPermission } from '@/lib/permissions-helpers'
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,6 +11,11 @@ export async function GET(request: NextRequest) {
     
     if (!user || !user.churchId) {
       return createErrorResponse('Não autorizado', 401)
+    }
+
+    // Verificar permissão para ler patrimônio
+    if (!(await checkPermission(request, 'assets:read'))) {
+      return createErrorResponse('Acesso negado. Você não tem permissão para visualizar patrimônio.', 403)
     }
 
     const { searchParams } = new URL(request.url)
@@ -89,6 +95,11 @@ export async function POST(request: NextRequest) {
     
     if (!user || !user.churchId) {
       return createErrorResponse('Não autorizado', 401)
+    }
+
+    // Verificar permissão para criar patrimônio
+    if (!(await checkPermission(request, 'assets:write'))) {
+      return createErrorResponse('Acesso negado. Você não tem permissão para criar patrimônio.', 403)
     }
 
     const body = await request.json()

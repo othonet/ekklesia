@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser, createErrorResponse, createSuccessResponse } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
+import { checkPermission } from '@/lib/permissions-helpers'
 
 /**
  * API de Analytics e Relatórios
@@ -12,6 +13,11 @@ export async function GET(request: NextRequest) {
     
     if (!user || !user.churchId) {
       return createErrorResponse('Não autorizado', 401)
+    }
+
+    // Verificar permissão para ler analytics
+    if (!(await checkPermission(request, 'analytics:read'))) {
+      return createErrorResponse('Acesso negado. Você não tem permissão para visualizar analytics.', 403)
     }
 
     const { searchParams } = new URL(request.url)

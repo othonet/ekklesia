@@ -131,7 +131,10 @@ class _DonationsScreenState extends State<DonationsScreen> {
                                     Chip(
                                       label: Text(
                                         donation.method!,
-                                        style: const TextStyle(fontSize: 12),
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Theme.of(context).colorScheme.onSurface,
+                                        ),
                                       ),
                                       padding: EdgeInsets.zero,
                                     ),

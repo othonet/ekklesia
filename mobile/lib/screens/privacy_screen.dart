@@ -14,58 +14,60 @@ class PrivacyScreen extends StatefulWidget {
 }
 
 class _PrivacyScreenState extends State<PrivacyScreen> {
-  final PrivacyService _privacyService = PrivacyService(
-    authService: AuthService(),
-  );
-  
+  PrivacyService? _privacyService;
   bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
+    _initializeService();
+  }
+
+  void _initializeService() {
+    // Usar o AuthService do provider ao invés de criar um novo
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    _privacyService = PrivacyService(
+      authService: authProvider.authService,
+    );
+    
+    // Carregar status de forma opcional (não bloqueia a tela)
     _loadConsentStatus();
   }
 
   Future<void> _loadConsentStatus() async {
-    if (!mounted) return;
+    if (!mounted || _privacyService == null) return;
     
-    setState(() {
-      _isLoading = true;
-    });
-
+    // Não mostrar loading inicial - apenas tentar carregar em background
     try {
-      await _privacyService.getConsentStatus();
-      if (!mounted) return;
-      
-      setState(() {
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      
-      setState(() {
-        _isLoading = false;
-      });
+      await _privacyService!.getConsentStatus();
+      // Se carregou com sucesso, atualizar o membro para refletir mudanças
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao carregar status: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        await authProvider.loadMember();
+      }
+    } catch (e) {
+      // Erro silencioso - os dados do member já estão disponíveis
+      // Apenas logar o erro, não mostrar para o usuário
+      debugPrint('Erro ao carregar status de privacidade: $e');
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Não foi possível atualizar o status de privacidade';
+        });
       }
     }
   }
 
   Future<void> _updateConsent(bool granted) async {
-    if (!mounted) return;
+    if (!mounted || _privacyService == null) return;
     
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
 
     try {
-      await _privacyService.updateConsent(granted);
+      await _privacyService!.updateConsent(granted);
       
       // Recarregar dados do membro para atualizar o estado
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -85,6 +87,9 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
       }
     } catch (e) {
       if (mounted) {
+        setState(() {
+          _errorMessage = 'Erro ao atualizar consentimento: ${e.toString()}';
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erro ao atualizar consentimento: ${e.toString()}'),
@@ -102,14 +107,15 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
   }
 
   Future<void> _exportData() async {
-    if (!mounted) return;
+    if (!mounted || _privacyService == null) return;
     
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
 
     try {
-      final data = await _privacyService.exportData();
+      final data = await _privacyService!.exportData();
       
       if (mounted) {
         await Share.share(
@@ -119,6 +125,9 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
       }
     } catch (e) {
       if (mounted) {
+        setState(() {
+          _errorMessage = 'Erro ao exportar dados: ${e.toString()}';
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erro ao exportar dados: ${e.toString()}'),
@@ -183,14 +192,15 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
     );
 
     if (confirmed == true && reasonController.text.trim().isNotEmpty) {
-      if (!mounted) return;
+      if (!mounted || _privacyService == null) return;
       
       setState(() {
         _isLoading = true;
+        _errorMessage = null;
       });
 
       try {
-        await _privacyService.requestDeletion(reasonController.text.trim());
+        await _privacyService!.requestDeletion(reasonController.text.trim());
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -204,6 +214,9 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
         }
       } catch (e) {
         if (mounted) {
+          setState(() {
+            _errorMessage = 'Erro ao solicitar exclusão: ${e.toString()}';
+          });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Erro ao solicitar exclusão: ${e.toString()}'),
@@ -229,13 +242,43 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
       appBar: AppBar(
         title: const Text('Privacidade e LGPD'),
       ),
-      body: _isLoading
+      body: _isLoading && member == null
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Mensagem de erro (se houver)
+                  if (_errorMessage != null) ...[
+                    Card(
+                      color: Colors.red.withOpacity(0.1),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.error_outline, color: Colors.red),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _errorMessage!,
+                                style: const TextStyle(color: Colors.red),
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close, size: 20),
+                              onPressed: () {
+                                setState(() {
+                                  _errorMessage = null;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   // Informações sobre consentimento
                   Card(
                     child: Padding(
@@ -263,7 +306,14 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                                     )
                                   : const Text('Não concedido'),
                               value: member.dataConsent,
-                              onChanged: (value) => _updateConsent(value),
+                              onChanged: _isLoading ? null : (value) => _updateConsent(value),
+                            )
+                          else
+                            const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(16.0),
+                                child: CircularProgressIndicator(),
+                              ),
                             ),
                         ],
                       ),

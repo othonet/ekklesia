@@ -48,7 +48,10 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       if (success) {
-        // Login bem-sucedido - navegar para HomeScreen
+        // Login bem-sucedido - aguardar um pouco para garantir que o membro foi carregado
+        // O modal de aniversário será mostrado na HomeScreen
+        if (!mounted) return;
+        await Future.delayed(const Duration(milliseconds: 300));
         if (!mounted) return;
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const HomeScreen()),

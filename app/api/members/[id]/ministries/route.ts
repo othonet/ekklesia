@@ -69,6 +69,14 @@ export async function POST(
       return NextResponse.json({ error: 'Ministério não encontrado' }, { status: 404 })
     }
 
+    // Verificar se o membro já é líder deste ministério
+    if (ministry.leaderId === resolvedParams.id) {
+      return NextResponse.json(
+        { error: 'Este membro já é líder deste ministério e não pode ser associado como membro comum' },
+        { status: 400 }
+      )
+    }
+
     // Verificar se já existe a associação
     const existing = await prisma.memberMinistry.findUnique({
       where: {

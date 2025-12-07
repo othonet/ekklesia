@@ -28,7 +28,8 @@ import {
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Loader2, Church, Edit, Plus, Eye, Search, Trash2, UserPlus } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
+import { Loader2, Church, Edit, Plus, Eye, Search, Trash2, UserPlus, Lock, Unlock } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
@@ -52,6 +53,7 @@ interface Tenant {
   plan: Plan | null
   planExpiresAt: Date | null
   planAssignedAt: Date | null
+  systemEnabled: boolean
   createdAt: Date
   users?: Array<{
     id: string
@@ -112,6 +114,33 @@ export default function TenantsPage() {
       }
     } catch (error) {
       console.error('Erro ao buscar planos:', error)
+    }
+  }
+
+  async function toggleSystemStatus(tenantId: string, currentStatus: boolean) {
+    try {
+      const response = await fetch(`/api/platform/tenants/${tenantId}/system-status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ systemEnabled: !currentStatus }),
+      })
+
+      if (response.ok) {
+        // Atualizar estado local
+        setTenants(tenants.map(t => 
+          t.id === tenantId 
+            ? { ...t, systemEnabled: !currentStatus }
+            : t
+        ))
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Erro ao atualizar status do sistema')
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar status do sistema:', error)
+      alert('Erro ao atualizar status do sistema')
     }
   }
 
@@ -384,6 +413,7 @@ export default function TenantsPage() {
                 <TableHead>Localização</TableHead>
                 <TableHead>Plano</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Sistema</TableHead>
                 <TableHead>Admin</TableHead>
                 <TableHead>Membros</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
@@ -392,7 +422,7 @@ export default function TenantsPage() {
             <TableBody>
               {filteredTenants.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                     Nenhum tenant encontrado
                   </TableCell>
                 </TableRow>
@@ -436,6 +466,26 @@ export default function TenantsPage() {
                         ) : (
                           <Badge variant="default">Ativo</Badge>
                         )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={tenant.systemEnabled ?? true}
+                            onCheckedChange={() => toggleSystemStatus(tenant.id, tenant.systemEnabled ?? true)}
+                            title={tenant.systemEnabled ? 'Sistema liberado' : 'Sistema bloqueado'}
+                          />
+                          {tenant.systemEnabled ? (
+                            <span className="text-xs text-green-600 flex items-center gap-1">
+                              <Unlock className="h-3 w-3" />
+                              Liberado
+                            </span>
+                          ) : (
+                            <span className="text-xs text-red-600 flex items-center gap-1">
+                              <Lock className="h-3 w-3" />
+                              Bloqueado
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         {tenant.users && tenant.users.length > 0 ? (

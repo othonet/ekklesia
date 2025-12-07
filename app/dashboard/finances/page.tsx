@@ -333,10 +333,27 @@ export default function FinancesPage() {
                   <Label>Data *</Label>
                   <Input type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} required />
                 </div>
-                <div className="space-y-2">
-                  <Label>Categoria</Label>
-                  <Input value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} placeholder="Ex: Manutenção, Eventos" />
-                </div>
+                {formData.type === 'EXPENSE' ? (
+                  <div className="space-y-2">
+                    <Label>Categoria</Label>
+                    <Select 
+                      value={formData.category || 'none'} 
+                      onValueChange={(v) => setFormData({ ...formData, category: v === 'none' ? '' : v })}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Selecione a categoria" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Sem categoria</SelectItem>
+                        <SelectItem value="Despesa fixa">Despesa fixa</SelectItem>
+                        <SelectItem value="Despesas variável">Despesas variável</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label>Categoria</Label>
+                    <Input value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} placeholder="Ex: Manutenção, Eventos" />
+                  </div>
+                )}
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>

@@ -25,6 +25,11 @@ interface Ministry {
   id: string
   name: string
   active: boolean
+  leader?: {
+    id: string
+    name: string
+    email: string | null
+  } | null
 }
 
 export function MinistryTab({ memberId }: { memberId: string }) {
@@ -32,7 +37,7 @@ export function MinistryTab({ memberId }: { memberId: string }) {
   const [ministries, setMinistries] = useState<Ministry[]>([])
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [formData, setFormData] = useState({ ministryId: '', role: '' })
+  const [formData, setFormData] = useState({ ministryId: '', role: 'Membro' })
 
   useEffect(() => {
     fetchData()
@@ -84,7 +89,7 @@ export function MinistryTab({ memberId }: { memberId: string }) {
       if (res.ok) {
         fetchData()
         setDialogOpen(false)
-        setFormData({ ministryId: '', role: '' })
+        setFormData({ ministryId: '', role: 'Membro' })
       } else {
         const error = await res.json()
         alert(error.error || 'Erro ao associar ministério')
@@ -121,8 +126,10 @@ export function MinistryTab({ memberId }: { memberId: string }) {
   }
 
   // Filtrar ministérios que o membro ainda não está associado
+  // E que o membro não é líder (líder não pode ser associado como membro comum)
   const availableMinistries = ministries.filter(
-    m => !memberMinistries.some(mm => mm.ministry.id === m.id)
+    m => !memberMinistries.some(mm => mm.ministry.id === m.id) &&
+         m.leader?.id !== memberId
   )
 
   return (
@@ -214,11 +221,12 @@ export function MinistryTab({ memberId }: { memberId: string }) {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Função/Cargo (opcional)</Label>
+              <Label>Função/Cargo</Label>
               <Input
                 value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                placeholder="Ex: Líder, Membro, Voluntário, etc."
+                disabled
+                readOnly
+                className="bg-muted cursor-not-allowed"
               />
             </div>
             <DialogFooter>

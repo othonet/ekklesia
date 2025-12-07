@@ -94,6 +94,7 @@ MinistryInfo _$MinistryInfoFromJson(Map<String, dynamic> json) => MinistryInfo(
   description: json['description'] as String?,
   role: json['role'] as String?,
   joinedAt: DateTime.parse(json['joinedAt'] as String),
+  leader: json['leader'] as Map<String, dynamic>?,
 );
 
 Map<String, dynamic> _$MinistryInfoToJson(MinistryInfo instance) =>
@@ -103,6 +104,7 @@ Map<String, dynamic> _$MinistryInfoToJson(MinistryInfo instance) =>
       'description': instance.description,
       'role': instance.role,
       'joinedAt': instance.joinedAt.toIso8601String(),
+      'leader': instance.leader,
     };
 
 Donation _$DonationFromJson(Map<String, dynamic> json) => Donation(

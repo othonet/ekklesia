@@ -19,11 +19,13 @@ import {
   Settings,
   User,
   Package,
-  Building
+  Building,
+  UserCheck
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { getUserFromToken, isAdmin, type UserInfo } from '@/lib/utils-client'
+import { getUserFromToken, type UserInfo } from '@/lib/utils-client'
 import { useChurchModules } from '@/lib/module-permissions-client'
+import { canAccessRoute, hasModuleAccess } from '@/lib/permissions'
 import * as Icons from 'lucide-react'
 
 // Mapeamento de módulos para navegação
@@ -52,13 +54,36 @@ export function Sidebar() {
   const pathname = usePathname()
   const [user, setUser] = useState<UserInfo | null>(null)
   const [mounted, setMounted] = useState(false)
+  const [isLeader, setIsLeader] = useState(false)
   const { modules, loading: modulesLoading } = useChurchModules()
 
   useEffect(() => {
     setMounted(true)
     const userInfo = getUserFromToken()
     setUser(userInfo)
+    
+    // Verificar se o usuário é líder de algum ministério
+    if (userInfo && userInfo.churchId) {
+      checkIfLeader()
+    }
   }, [])
+
+  const checkIfLeader = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return
+      
+      const res = await fetch('/api/leadership/ministries', {
+        headers: { 'Authorization': `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setIsLeader(data.isLeader || false)
+      }
+    } catch (error) {
+      console.error('Erro ao verificar liderança:', error)
+    }
+  }
 
   if (!mounted) {
     return (
@@ -73,14 +98,23 @@ export function Sidebar() {
     )
   }
 
-  const userIsAdmin = isAdmin(user)
+  // Verificar permissões do usuário
+  const userRole = user?.role || 'MEMBER'
+  const hasDashboardAccess = canAccessRoute(userRole, '/dashboard')
   
-  // Construir navegação baseada nos módulos disponíveis
-  const navigationToShow = userIsAdmin
+  // Construir navegação baseada nas permissões do usuário e módulos disponíveis
+  const navigationToShow = hasDashboardAccess
     ? [
-        dashboardNav,
+        // Dashboard sempre disponível se tiver acesso
+        ...(canAccessRoute(userRole, '/dashboard') ? [dashboardNav] : []),
+        // Filtrar módulos baseado em permissões
         ...modules
-          .filter((m) => m.route && moduleNavigationMap[m.key])
+          .filter((m) => {
+            // Verificar se o módulo está disponível no plano
+            if (!m.route || !moduleNavigationMap[m.key]) return false
+            // Verificar se o usuário tem permissão para acessar o módulo
+            return hasModuleAccess(userRole, m.key.toLowerCase())
+          })
           .map((m) => ({
             ...moduleNavigationMap[m.key],
             icon: m.icon ? (Icons as any)[m.icon] || LayoutDashboard : LayoutDashboard,
@@ -104,7 +138,7 @@ export function Sidebar() {
       </div>
       <nav className="flex-1 space-y-6 overflow-y-auto p-4">
         {/* Seção Plataforma Multitenancy - Apenas para Super Admin */}
-        {userIsAdmin && (
+        {userRole === 'ADMIN' && (
           <div className="space-y-1">
             <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               Plataforma Multitenancy
@@ -124,8 +158,29 @@ export function Sidebar() {
           </div>
         )}
 
-        {/* Seção Administração da Igreja - Módulos baseados no plano */}
-        {userIsAdmin && navigationToShow.length > 0 && (
+        {/* Seção Liderança - Apenas para líderes de ministérios */}
+        {hasDashboardAccess && isLeader && (
+          <div className="space-y-1">
+            <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Liderança
+            </div>
+            <Link
+              href="/dashboard/leadership"
+              className={cn(
+                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                pathname.startsWith('/dashboard/leadership')
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+              )}
+            >
+              <UserCheck className="h-5 w-5" />
+              Meus Ministérios
+            </Link>
+          </div>
+        )}
+
+        {/* Seção Administração da Igreja - Módulos baseados em permissões e plano */}
+        {hasDashboardAccess && navigationToShow.length > 0 && (
           <div className="space-y-1">
             <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               Administração da Igreja

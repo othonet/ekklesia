@@ -285,18 +285,24 @@ class _EventsScreenState extends State<EventsScreen> {
                                             style: const TextStyle(fontSize: 12),
                                           ),
                                           backgroundColor: eventColor.withOpacity(0.1),
-                                          labelStyle: TextStyle(color: eventColor),
+                                          labelStyle: TextStyle(
+                                            color: eventColor,
+                                            fontSize: 12,
+                                          ),
                                           padding: EdgeInsets.zero,
                                         ),
                                         if (isPast) ...[
                                           const SizedBox(width: 8),
                                           Chip(
-                                            label: const Text(
+                                            label: Text(
                                               'Realizado',
-                                              style: TextStyle(fontSize: 12),
+                                              style: const TextStyle(fontSize: 12),
                                             ),
-                                            backgroundColor: Colors.grey.withOpacity(0.1),
-                                            labelStyle: const TextStyle(color: Colors.grey),
+                                            backgroundColor: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.1),
+                                            labelStyle: TextStyle(
+                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                              fontSize: 12,
+                                            ),
                                             padding: EdgeInsets.zero,
                                           ),
                                         ],

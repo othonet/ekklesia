@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
+import { checkPermission } from '@/lib/permissions-helpers'
 
 export async function GET(request: NextRequest) {
   try {
     const user = getCurrentUser(request)
     if (!user || !user.churchId) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    }
+
+    // Verificar permissão para ler eventos
+    if (!(await checkPermission(request, 'events:read'))) {
+      return NextResponse.json({ error: 'Acesso negado. Você não tem permissão para visualizar eventos.' }, { status: 403 })
     }
 
     const events = await prisma.event.findMany({
@@ -25,6 +31,11 @@ export async function POST(request: NextRequest) {
     const user = getCurrentUser(request)
     if (!user || !user.churchId) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    }
+
+    // Verificar permissão para criar eventos
+    if (!(await checkPermission(request, 'events:write'))) {
+      return NextResponse.json({ error: 'Acesso negado. Você não tem permissão para criar eventos.' }, { status: 403 })
     }
 
     const body = await request.json()

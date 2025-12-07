@@ -25,11 +25,14 @@ export async function GET(request: NextRequest) {
       },
       include: {
         ministry: {
-          select: {
-            id: true,
-            name: true,
-            description: true,
-            active: true,
+          include: {
+            leader: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
           },
         },
       },
@@ -43,6 +46,11 @@ export async function GET(request: NextRequest) {
       description: mm.ministry.description,
       role: mm.role,
       joinedAt: mm.joinedAt,
+      leader: mm.ministry.leader ? {
+        id: mm.ministry.leader.id,
+        name: mm.ministry.leader.name,
+        email: mm.ministry.leader.email,
+      } : null,
     }))
 
     return NextResponse.json(ministries)

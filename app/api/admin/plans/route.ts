@@ -6,7 +6,8 @@ import { getCorsHeaders } from '@/lib/cors'
 // Verificar se é admin
 async function isAdmin(request: NextRequest): Promise<boolean> {
   try {
-    const token = request.cookies.get('token')?.value
+    const token = request.cookies.get('platform_token')?.value || 
+                  request.cookies.get('token')?.value // Fallback para compatibilidade
     if (!token) return false
 
     const payload = verifyToken(token)

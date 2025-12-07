@@ -1,16 +1,33 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class ConfigService {
   static const String _apiUrlKey = 'api_base_url';
-  static const String _defaultApiUrl = 'http://192.168.1.161:3000';
+  // Para emulador Android: use http://10.0.2.2:3000
+  // Para dispositivo físico: use http://SEU_IP:3000 (ex: http://192.168.1.161:3000)
+  // Para web/desktop: use http://localhost:3000
+  
+  /// Retorna a URL padrão baseada na plataforma
+  static String get _defaultApiUrl {
+    if (kIsWeb) {
+      // APENAS para Chrome/Web: usa localhost automaticamente
+      return 'http://localhost:3000';
+    } else {
+      // Mobile/APK: mantém comportamento original (emulador por padrão)
+      // O usuário pode alterar nas configurações do app se necessário
+      return 'http://10.0.2.2:3000';
+    }
+  }
 
   /// Obtém a URL base da API
   static Future<String> getApiBaseUrl() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final savedUrl = prefs.getString(_apiUrlKey);
+      // Se não houver URL salva, usa a padrão baseada na plataforma
       return savedUrl ?? _defaultApiUrl;
     } catch (e) {
+      // Em caso de erro, retorna a URL padrão baseada na plataforma
       return _defaultApiUrl;
     }
   }

@@ -167,7 +167,14 @@ class AuthService {
       return 'Tempo de conexão esgotado. Verifique sua internet e a URL da API.';
     } else if (error.type == DioExceptionType.connectionError) {
       final baseUrl = await ConfigService.getApiBaseUrl();
-      return 'Erro de conexão. Verifique sua internet e se o servidor está rodando em $baseUrl';
+      String errorMsg = 'Erro de conexão. Verifique sua internet e se o servidor está rodando em $baseUrl';
+      
+      // Se estiver usando a URL padrão do emulador em dispositivo físico, dar dica específica
+      if (baseUrl.contains('10.0.2.2')) {
+        errorMsg += '\n\n⚠️ Você está usando a URL do emulador. Para dispositivo físico, configure o IP do seu computador nas Configurações.';
+      }
+      
+      return errorMsg;
     } else {
       return 'Erro inesperado: ${error.message}';
     }

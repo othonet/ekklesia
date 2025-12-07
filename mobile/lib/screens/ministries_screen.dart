@@ -125,12 +125,37 @@ class _MinistriesScreenState extends State<MinistriesScreen> {
                                     const SizedBox(height: 4),
                                     Text(ministry.description!),
                                   ],
+                                  if (ministry.leader != null) ...[
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.person,
+                                          size: 16,
+                                          color: Theme.of(context).colorScheme.primary,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Expanded(
+                                          child: Text(
+                                            'Líder: ${ministry.leader!['name'] ?? 'N/A'}',
+                                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                              color: Theme.of(context).colorScheme.primary,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                   if (ministry.role != null) ...[
                                     const SizedBox(height: 8),
                                     Chip(
                                       label: Text(
                                         ministry.role!,
-                                        style: const TextStyle(fontSize: 12),
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Theme.of(context).colorScheme.onSurface,
+                                        ),
                                       ),
                                       padding: EdgeInsets.zero,
                                     ),

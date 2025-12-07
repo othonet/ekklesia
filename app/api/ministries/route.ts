@@ -14,6 +14,13 @@ export async function GET(request: NextRequest) {
       where: { churchId: user.churchId },
       orderBy: { createdAt: 'desc' },
       include: {
+        leader: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
         members: {
           include: {
             member: true,
@@ -40,19 +47,46 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, description, leader, active } = body
+    const { name, description, leaderId, active } = body
 
     if (!name) {
       return NextResponse.json({ error: 'Nome é obrigatório' }, { status: 400 })
+    }
+
+    // Validar que o líder é um membro cadastrado da igreja
+    if (leaderId) {
+      const leaderMember = await prisma.member.findFirst({
+        where: {
+          id: leaderId,
+          churchId: user.churchId,
+          deletedAt: null,
+        },
+      })
+
+      if (!leaderMember) {
+        return NextResponse.json(
+          { error: 'Líder deve ser um membro cadastrado da igreja' },
+          { status: 400 }
+        )
+      }
     }
 
     const ministry = await prisma.ministry.create({
       data: {
         name,
         description,
-        leader,
+        leaderId: leaderId || null,
         active: active !== undefined ? active : true,
         churchId: user.churchId,
+      },
+      include: {
+        leader: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
       },
     })
 

@@ -9,24 +9,38 @@ import { EmptyState } from '@/components/empty-state'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface Ministry {
   id: string
   name: string
   description: string | null
-  leader: string | null
+  leader: {
+    id: string
+    name: string
+    email: string | null
+  } | null
   active: boolean
+}
+
+interface Member {
+  id: string
+  name: string
+  email: string | null
 }
 
 export default function MinistriesPage() {
   const [ministries, setMinistries] = useState<Ministry[]>([])
+  const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMembers, setLoadingMembers] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selected, setSelected] = useState<Ministry | null>(null)
-  const [formData, setFormData] = useState({ name: '', description: '', leader: '', active: true })
+  const [formData, setFormData] = useState({ name: '', description: '', leaderId: '', active: true })
 
   useEffect(() => {
     fetchData()
+    fetchMembers()
   }, [])
 
   const fetchData = async () => {
@@ -44,6 +58,30 @@ export default function MinistriesPage() {
     }
   }
 
+  const fetchMembers = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch('/api/members?limit=1000', {
+        headers: { 'Authorization': `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const response = await res.json()
+        // A API retorna { data: [...], pagination: {...} }
+        const membersList = response.data || response.members || response || []
+        // Filtrar apenas membros não deletados e com status válido (excluir apenas INACTIVE)
+        const validMembers = membersList.filter(
+          (m: Member & { deletedAt?: string | null; status?: string }) =>
+            !m.deletedAt && m.status !== 'INACTIVE'
+        )
+        setMembers(validMembers)
+      }
+    } catch (error) {
+      console.error('Erro ao buscar membros:', error)
+    } finally {
+      setLoadingMembers(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
@@ -55,13 +93,16 @@ export default function MinistriesPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          leaderId: formData.leaderId || null,
+        }),
       })
       if (res.ok) {
         fetchData()
         setDialogOpen(false)
         setSelected(null)
-        setFormData({ name: '', description: '', leader: '', active: true })
+        setFormData({ name: '', description: '', leaderId: '', active: true })
       }
     } catch (error) {
       console.error(error)
@@ -90,7 +131,7 @@ export default function MinistriesPage() {
             <h1 className="text-3xl font-bold">Ministérios</h1>
             <p className="text-muted-foreground">Gerencie os ministérios da igreja</p>
           </div>
-          <Button onClick={() => { setSelected(null); setFormData({ name: '', description: '', leader: '', active: true }); setDialogOpen(true) }}>
+          <Button onClick={() => { setSelected(null); setFormData({ name: '', description: '', leaderId: '', active: true }); setDialogOpen(true) }}>
             <Plus className="h-4 w-4 mr-2" /> Novo Ministério
           </Button>
         </div>
@@ -131,7 +172,7 @@ export default function MinistriesPage() {
                       >
                         <Calendar className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => { setSelected(m); setFormData({ name: m.name, description: m.description || '', leader: m.leader || '', active: m.active }); setDialogOpen(true) }}>
+                      <Button variant="outline" size="sm" onClick={() => { setSelected(m); setFormData({ name: m.name, description: m.description || '', leaderId: m.leader?.id || '', active: m.active }); setDialogOpen(true) }}>
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => handleDelete(m.id)}>
@@ -140,7 +181,7 @@ export default function MinistriesPage() {
                     </div>
                   </div>
                   {m.description && <p className="text-sm text-muted-foreground mb-2">{m.description}</p>}
-                  {m.leader && <p className="text-xs text-muted-foreground">Líder: {m.leader}</p>}
+                  {m.leader && <p className="text-xs text-muted-foreground">Líder: {m.leader.name}</p>}
                   <span className={`inline-block mt-2 px-2 py-1 rounded text-xs ${m.active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'}`}>
                     {m.active ? 'Ativo' : 'Inativo'}
                   </span>
@@ -166,7 +207,26 @@ export default function MinistriesPage() {
               </div>
               <div className="space-y-2">
                 <Label>Líder</Label>
-                <Input value={formData.leader} onChange={(e) => setFormData({ ...formData, leader: e.target.value })} />
+                <Select
+                  value={formData.leaderId || undefined}
+                  onValueChange={(value) => setFormData({ ...formData, leaderId: value === 'none' ? '' : value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um membro (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhum</SelectItem>
+                    {loadingMembers ? (
+                      <SelectItem value="loading" disabled>Carregando membros...</SelectItem>
+                    ) : (
+                      members.map((member) => (
+                        <SelectItem key={member.id} value={member.id}>
+                          {member.name} {member.email ? `(${member.email})` : ''}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>

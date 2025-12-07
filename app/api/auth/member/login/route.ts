@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateMember } from '@/lib/auth'
 import { getCorsHeaders } from '@/lib/cors'
 import { hasMobileAppAccess } from '@/lib/module-permissions'
+import { isSystemEnabled } from '@/lib/church-status'
 
 export async function OPTIONS(request: NextRequest) {
   return NextResponse.json({}, { headers: getCorsHeaders(request) })
@@ -55,6 +56,22 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('Login bem-sucedido para membro:', email)
+
+    // Verificar se o sistema está habilitado para a igreja
+    const systemEnabled = await isSystemEnabled(result.member.churchId)
+    
+    if (!systemEnabled) {
+      return NextResponse.json(
+        {
+          error: 'Sistema bloqueado. Entre em contato com o administrador da plataforma.',
+          blocked: true,
+        },
+        {
+          status: 403,
+          headers: corsHeaders,
+        }
+      )
+    }
 
     // Verificar se a igreja tem acesso ao app mobile
     const hasAccess = await hasMobileAppAccess(result.member.churchId)

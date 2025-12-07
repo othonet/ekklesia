@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
+import { checkPermission } from '@/lib/permissions-helpers'
 
 export async function GET(request: NextRequest) {
   try {
     const user = getCurrentUser(request)
     if (!user || !user.churchId) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    }
+
+    // Verificar permissão para ler orçamentos
+    if (!(await checkPermission(request, 'budgets:read'))) {
+      return NextResponse.json({ error: 'Acesso negado. Você não tem permissão para visualizar orçamentos.' }, { status: 403 })
     }
 
     const budgets = await prisma.budget.findMany({
@@ -57,6 +63,11 @@ export async function POST(request: NextRequest) {
     const user = getCurrentUser(request)
     if (!user || !user.churchId) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    }
+
+    // Verificar permissão para criar orçamentos
+    if (!(await checkPermission(request, 'budgets:write'))) {
+      return NextResponse.json({ error: 'Acesso negado. Você não tem permissão para criar orçamentos.' }, { status: 403 })
     }
 
     const body = await request.json()

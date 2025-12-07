@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { DashboardLayout } from '@/components/dashboard-layout'
-import { Users, Building2, Calendar, DollarSign, TrendingUp, TrendingDown, ArrowRight, Activity } from 'lucide-react'
+import { Users, Building2, Calendar, DollarSign, TrendingUp, TrendingDown, ArrowRight, Activity, Cake, Gift } from 'lucide-react'
 import Link from 'next/link'
 import { useCache } from '@/hooks/use-cache'
 
@@ -41,6 +42,15 @@ interface RecentFinance {
     id: string
     name: string
   } | null
+}
+
+interface BirthdayMember {
+  id: string
+  name: string
+  email: string | null
+  phone: string | null
+  birthDate: string
+  age: number
 }
 
 export default function DashboardPage() {
@@ -95,6 +105,36 @@ export default function DashboardPage() {
     { cacheDuration: 2 * 60 * 1000 } // 2 minutos
   )
 
+  // Cache de aniversariantes do dia
+  const { data: birthdaysData, loading: birthdaysLoading } = useCache<BirthdayMember[]>(
+    'dashboard_birthdays',
+    async () => {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        console.error('❌ Token não encontrado no localStorage')
+        return []
+      }
+      try {
+        const response = await fetch('/api/dashboard/birthdays', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        })
+        if (response.ok) {
+          const data = await response.json()
+          console.log('✅ Aniversariantes recebidos:', data)
+          return data.birthdays || []
+        } else {
+          const errorData = await response.json().catch(() => ({}))
+          console.error('❌ Erro ao buscar aniversariantes:', response.status, errorData)
+          return []
+        }
+      } catch (error) {
+        console.error('❌ Erro na requisição de aniversariantes:', error)
+        return []
+      }
+    },
+    { cacheDuration: 60 * 60 * 1000 } // 1 hora (aniversários não mudam durante o dia)
+  )
+
   const stats = statsData || {
     members: 0,
     activeMembers: 0,
@@ -114,7 +154,8 @@ export default function DashboardPage() {
     totalAttendance: 0,
   }
   const recentFinances = financesData || []
-  const loading = statsLoading || financesLoading
+  const birthdays = birthdaysData || []
+  const loading = statsLoading || financesLoading || birthdaysLoading
 
   const fetchStats = async () => {
     await refreshStats()
@@ -255,6 +296,72 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Aniversariantes do Dia */}
+            <Card className="border-2 border-pink-200 dark:border-pink-800 bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/20 dark:to-purple-950/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-pink-700 dark:text-pink-400">
+                  <Cake className="h-5 w-5" />
+                  Aniversariantes do Dia
+                  {birthdays.length > 0 && (
+                    <Badge variant="secondary" className="ml-2 bg-pink-200 dark:bg-pink-900 text-pink-800 dark:text-pink-200">
+                      {birthdays.length}
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {birthdaysLoading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500 mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Carregando aniversariantes...</p>
+                  </div>
+                ) : birthdays.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Cake className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>Nenhum aniversariante hoje</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {birthdays.map((member) => (
+                      <div
+                        key={member.id}
+                        className="flex items-center justify-between p-4 rounded-lg bg-white dark:bg-gray-800 border border-pink-200 dark:border-pink-800 shadow-sm hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-center gap-4 flex-1">
+                          <div className="flex-shrink-0">
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-white font-bold text-lg">
+                              {member.name.charAt(0).toUpperCase()}
+                            </div>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-semibold text-lg">{member.name}</h4>
+                              <Badge variant="outline" className="bg-pink-100 dark:bg-pink-900 text-pink-700 dark:text-pink-300 border-pink-300 dark:border-pink-700">
+                                {member.age} {member.age === 1 ? 'ano' : 'anos'}
+                              </Badge>
+                            </div>
+                            {member.email && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {member.email}
+                              </p>
+                            )}
+                            {member.phone && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {member.phone}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex-shrink-0 ml-4">
+                          <Gift className="h-5 w-5 text-pink-500 dark:text-pink-400" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Últimas Transações Financeiras */}
             <Card>

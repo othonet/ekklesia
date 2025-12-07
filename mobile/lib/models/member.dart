@@ -93,6 +93,7 @@ class MinistryInfo {
   final String? description;
   final String? role;
   final DateTime joinedAt;
+  final Map<String, dynamic>? leader; // Líder do ministério {id, name, email}
 
   MinistryInfo({
     required this.id,
@@ -100,6 +101,7 @@ class MinistryInfo {
     this.description,
     this.role,
     required this.joinedAt,
+    this.leader,
   });
 
   factory MinistryInfo.fromJson(Map<String, dynamic> json) => _$MinistryInfoFromJson(json);

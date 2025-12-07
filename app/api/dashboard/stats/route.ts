@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCurrentUser, createErrorResponse, createSuccessResponse } from '@/lib/api-helpers'
+import { getCurrentUser, createErrorResponse, createSuccessResponse, checkSystemEnabled } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
+    // Verificar se o sistema está habilitado
+    const systemCheck = await checkSystemEnabled(request)
+    if (systemCheck) return systemCheck
+
     const user = getCurrentUser(request)
     
     if (!user || !user.churchId) {

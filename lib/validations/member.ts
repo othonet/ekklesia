@@ -54,7 +54,7 @@ export const createMemberSchema = z.object({
     return typeof val === 'string' ? val.toUpperCase() : val
   }, z.string().max(2, 'Estado deve ter 2 caracteres').nullable().optional()),
   zipCode: zipCodeSchema,
-  status: z.enum(['ACTIVE', 'INACTIVE', 'VISITOR']).optional().default('ACTIVE'),
+  status: z.enum(['ACTIVE', 'INACTIVE', 'VISITOR', 'LEADER', 'VOLUNTEER']).optional().default('ACTIVE'),
   cpf: cpfSchema,
   rg: emptyStringToNull,
   maritalStatus: emptyStringToNull,

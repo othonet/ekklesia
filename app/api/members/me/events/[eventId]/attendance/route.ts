@@ -1,22 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthenticatedMember } from '@/lib/member-auth'
+import { getCorsHeaders } from '@/lib/cors'
 
 /**
  * Confirma ou cancela presença do membro em um evento
  */
+export async function OPTIONS(request: NextRequest) {
+  return NextResponse.json({}, { headers: getCorsHeaders(request) })
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ eventId: string }> | { eventId: string } }
 ) {
   try {
+    const corsHeaders = getCorsHeaders(request)
+    
     // Buscar membro autenticado via JWT
     const member = await getAuthenticatedMember(request)
 
     if (!member) {
       return NextResponse.json(
         { error: 'Token inválido ou expirado' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       )
     }
 
@@ -27,7 +34,7 @@ export async function POST(
     if (typeof willAttend !== 'boolean') {
       return NextResponse.json(
         { error: 'Parâmetro "willAttend" deve ser true ou false' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       )
     }
 
@@ -43,7 +50,7 @@ export async function POST(
     if (!event) {
       return NextResponse.json(
         { error: 'Evento não encontrado' },
-        { status: 404 }
+        { status: 404, headers: corsHeaders }
       )
     }
 
@@ -83,7 +90,7 @@ export async function POST(
         success: true,
         message: willAttend ? 'Presença confirmada com sucesso' : 'Presença cancelada com sucesso',
         attendance: updatedAttendance,
-      })
+      }, { headers: corsHeaders })
     } else {
       // Criar novo registro de presença
       const newAttendance = await prisma.attendance.create({
@@ -114,13 +121,13 @@ export async function POST(
         success: true,
         message: willAttend ? 'Presença confirmada com sucesso' : 'Presença cancelada com sucesso',
         attendance: newAttendance,
-      })
+      }, { headers: corsHeaders })
     }
   } catch (error: any) {
     console.error('Erro ao confirmar presença:', error)
     return NextResponse.json(
       { error: error.message || 'Erro ao confirmar presença' },
-      { status: 500 }
+      { status: 500, headers: getCorsHeaders(request) }
     )
   }
 }

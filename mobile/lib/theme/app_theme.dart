@@ -103,7 +103,10 @@ class AppTheme {
       chipTheme: ChipThemeData(
         backgroundColor: Colors.grey.shade100,
         selectedColor: primaryColor.withOpacity(0.1),
-        labelStyle: const TextStyle(fontSize: 12),
+        labelStyle: const TextStyle(
+          fontSize: 12,
+          color: Color(0xFF1F2937), // Texto escuro no tema claro
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(6),
@@ -207,7 +210,10 @@ class AppTheme {
       chipTheme: ChipThemeData(
         backgroundColor: const Color(0xFF374151),
         selectedColor: primaryColor.withOpacity(0.2),
-        labelStyle: const TextStyle(fontSize: 12),
+        labelStyle: const TextStyle(
+          fontSize: 12,
+          color: Color(0xFFF9FAFB), // Texto claro no tema escuro
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(6),

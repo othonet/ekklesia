@@ -122,7 +122,11 @@ export async function DELETE(
       include: {
         _count: {
           select: {
-            members: true,
+            members: {
+              where: {
+                deletedAt: null, // Contar apenas membros não deletados (soft delete)
+              },
+            },
             users: true,
           },
         },
@@ -136,17 +140,115 @@ export async function DELETE(
       )
     }
 
-    // Verificar se há dados associados
-    if (church._count.members > 0 || church._count.users > 0) {
+    // Verificar se há membros ativos (não permitir deletar se houver membros ativos)
+    if (church._count.members > 0) {
       return NextResponse.json(
         { 
-          error: 'Não é possível excluir igreja com membros ou usuários associados. Remova-os primeiro.' 
+          error: `Não é possível excluir igreja com ${church._count.members} membro(s) ativo(s) associado(s). Remova os membros primeiro.` 
         },
         { status: 400, headers: getCorsHeaders(request) }
       )
     }
 
-    // Deletar igreja
+    // Deletar todas as entidades relacionadas antes de deletar a igreja
+    // Ordem de deleção: primeiro deletar entidades que dependem de outras, depois as independentes
+    
+    // 0. Deletar TODOS os membros (incluindo soft deleted) - eles ainda têm churchId referenciando a igreja
+    // As relações com onDelete: Cascade serão deletadas automaticamente pelo Prisma
+    // (MemberMinistry, MemberCourse, MemberConsent, DataRequest, Attendance, Baptism, Discipleship, Certificate)
+    const deletedMembers = await prisma.member.deleteMany({
+      where: { churchId: churchId },
+    })
+    console.log(`Deletados ${deletedMembers.count} membro(s) da igreja ${churchId} (incluindo soft deleted)`)
+
+    // 1. Deletar usuários da igreja (exceto admins da plataforma)
+    const deletedUsers = await prisma.user.deleteMany({
+      where: {
+        churchId: churchId,
+        isPlatformAdmin: false,
+      },
+    })
+    console.log(`Deletados ${deletedUsers.count} usuário(s) da igreja ${churchId}`)
+
+    // 2. Deletar ministérios e suas escalas (cascata automática)
+    const deletedMinistries = await prisma.ministry.deleteMany({
+      where: { churchId: churchId },
+    })
+    console.log(`Deletados ${deletedMinistries.count} ministério(s) da igreja ${churchId}`)
+
+    // 3. Deletar eventos
+    const deletedEvents = await prisma.event.deleteMany({
+      where: { churchId: churchId },
+    })
+    console.log(`Deletados ${deletedEvents.count} evento(s) da igreja ${churchId}`)
+
+    // 4. Deletar cursos
+    const deletedCourses = await prisma.course.deleteMany({
+      where: { churchId: churchId },
+    })
+    console.log(`Deletados ${deletedCourses.count} curso(s) da igreja ${churchId}`)
+
+    // 5. Deletar certificados
+    const deletedCertificates = await prisma.certificate.deleteMany({
+      where: { churchId: churchId },
+    })
+    console.log(`Deletados ${deletedCertificates.count} certificado(s) da igreja ${churchId}`)
+
+    // 6. Deletar batismos
+    const deletedBaptisms = await prisma.baptism.deleteMany({
+      where: { churchId: churchId },
+    })
+    console.log(`Deletados ${deletedBaptisms.count} batismo(s) da igreja ${churchId}`)
+
+    // 7. Deletar discipulados
+    const deletedDiscipleships = await prisma.discipleship.deleteMany({
+      where: { churchId: churchId },
+    })
+    console.log(`Deletados ${deletedDiscipleships.count} discipulado(s) da igreja ${churchId}`)
+
+    // 8. Deletar finanças
+    const deletedFinances = await prisma.finance.deleteMany({
+      where: { churchId: churchId },
+    })
+    console.log(`Deletados ${deletedFinances.count} registro(s) financeiro(s) da igreja ${churchId}`)
+
+    // 9. Deletar doações
+    const deletedDonations = await prisma.donation.deleteMany({
+      where: { churchId: churchId },
+    })
+    console.log(`Deletados ${deletedDonations.count} doação(ões) da igreja ${churchId}`)
+
+    // 10. Deletar pagamentos
+    const deletedPayments = await prisma.payment.deleteMany({
+      where: { churchId: churchId },
+    })
+    console.log(`Deletados ${deletedPayments.count} pagamento(s) da igreja ${churchId}`)
+
+    // 11. Deletar orçamentos
+    const deletedBudgets = await prisma.budget.deleteMany({
+      where: { churchId: churchId },
+    })
+    console.log(`Deletados ${deletedBudgets.count} orçamento(s) da igreja ${churchId}`)
+
+    // 12. Deletar patrimônio
+    const deletedAssets = await prisma.asset.deleteMany({
+      where: { churchId: churchId },
+    })
+    console.log(`Deletados ${deletedAssets.count} item(ns) de patrimônio da igreja ${churchId}`)
+
+    // 13. Deletar presenças
+    const deletedAttendances = await prisma.attendance.deleteMany({
+      where: { churchId: churchId },
+    })
+    console.log(`Deletados ${deletedAttendances.count} registro(s) de presença da igreja ${churchId}`)
+
+    // 14. Deletar escalas de ministério
+    const deletedSchedules = await prisma.ministrySchedule.deleteMany({
+      where: { churchId: churchId },
+    })
+    console.log(`Deletados ${deletedSchedules.count} escala(s) de ministério da igreja ${churchId}`)
+
+    // Agora deletar a igreja
     await prisma.church.delete({
       where: { id: churchId },
     })

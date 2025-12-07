@@ -47,6 +47,9 @@ model Church {
   plan        Plan?    @relation(fields: [planId], references: [id])
   planAssignedAt DateTime?
   planExpiresAt  DateTime?
+  
+  // Controle de acesso ao sistema
+  systemEnabled Boolean @default(true) // Se false, bloqueia acesso total (web + app)
 
   users       User[]
   members     Member[]
@@ -113,6 +116,7 @@ model Member {
   payments    Payment[]
   finances    Finance[]      // Receitas associadas ao membro
   ministries  MemberMinistry[]
+  ledMinistries Ministry[] @relation("MinistryLeader") // Ministérios onde é líder
   consents    MemberConsent[]
   dataRequests DataRequest[]
   attendances Attendance[]
@@ -129,7 +133,8 @@ model Ministry {
   id          String   @id @default(cuid())
   name        String
   description String?
-  leader      String?
+  leaderId    String?  // ID do membro líder
+  leader      Member?  @relation("MinistryLeader", fields: [leaderId], references: [id], onDelete: SetNull)
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -139,6 +144,8 @@ model Ministry {
 
   members     MemberMinistry[]
   schedules   MinistrySchedule[]
+
+  @@index([leaderId])
 
   @@map("ministries")
 }
@@ -273,10 +280,13 @@ model Donation {
 }
 
 enum UserRole {
-  ADMIN
-  PASTOR
-  LEADER
-  MEMBER
+  ADMIN                    // Admin da plataforma (multitenancy)
+  PASTOR_PRESIDENTE       // Pastor presidente - acesso total à administração da igreja
+  SECRETARIO              // Secretário(a) - membros, eventos, cursos, certificados
+  TESOUREIRO              // Tesoureiro(a) - finanças, patrimônio, analytics, relatórios, orçamentos
+  PASTOR                  // Pastor (mantido para compatibilidade)
+  LEADER                  // Líder (mantido para compatibilidade)
+  MEMBER                  // Membro comum
 }
 
 enum MemberStatus {
