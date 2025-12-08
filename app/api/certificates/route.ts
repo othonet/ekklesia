@@ -288,6 +288,16 @@ export async function POST(request: NextRequest) {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
     const qrCodeUrl = generateQRCodeUrl(certificateNumber, validationHash, baseUrl)
 
+    // Buscar nome do usuário do banco de dados
+    let userName: string | null = null
+    if (!issuedBy && user.userId) {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: user.userId },
+        select: { name: true },
+      })
+      userName = dbUser?.name || null
+    }
+
     const certificate = await prisma.certificate.create({
       data: {
         memberId,
@@ -301,7 +311,7 @@ export async function POST(request: NextRequest) {
         validationHash,
         qrCodeUrl,
         issuedDate,
-        issuedBy: issuedBy || user.name || null,
+        issuedBy: issuedBy || userName || null,
         validUntil: validUntil ? new Date(validUntil) : null,
         churchId: user.churchId,
       },
