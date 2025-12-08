@@ -24,9 +24,13 @@
 ### 1. Autenticação MySQL (mysqldump / Prisma P1000)
 **Causa:** Credenciais inválidas ou ausentes no servidor VPS
 **Correção:**
-- Verificar e ajustar secrets do GitHub Actions (`DATABASE_URL`)
+- ✅ **DATABASE_URL configurada na VPS:**
+  ```
+  DATABASE_URL="mysql://root:admin123@localhost:3306/ekklesia"
+  ```
+- Verificar e ajustar secrets do GitHub Actions (`DATABASE_URL`) com as mesmas credenciais
 - Validar credenciais MySQL no servidor VPS
-- Testar conexão: `mysql -u usuario -p -h localhost`
+- Testar conexão: `mysql -u root -padmin123 -h localhost`
 
 ## ⚠️ Warnings Restantes (Não quebram o build)
 
