@@ -651,7 +651,7 @@ export default function TenantsPage() {
           <DialogHeader>
             <DialogTitle>Confirmar Exclusão</DialogTitle>
             <DialogDescription>
-              Tem certeza que deseja excluir o tenant "{selectedTenant?.name}"?
+              Tem certeza que deseja excluir o tenant &quot;{selectedTenant?.name}&quot;?
               <br />
               <strong className="text-destructive">
                 Esta ação não pode ser desfeita!

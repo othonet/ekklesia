@@ -161,7 +161,7 @@ export default function PlansPage() {
           <DialogHeader>
             <DialogTitle>Confirmar Exclusão</DialogTitle>
             <DialogDescription>
-              Tem certeza que deseja excluir o plano "{selectedPlan?.name}"?
+              Tem certeza que deseja excluir o plano &quot;{selectedPlan?.name}&quot;?
               <br />
               <strong className="text-destructive">
                 Esta ação não pode ser desfeita!

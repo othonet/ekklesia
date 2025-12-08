@@ -414,8 +414,8 @@ export default function TenantModulesPage() {
                 <Select
                   value={selectedModule?.id || ''}
                   onValueChange={(value) => {
-                    const module = data.availableModules.find((m) => m.id === value)
-                    setSelectedModule(module || null)
+                    const foundModule = data.availableModules.find((m) => m.id === value)
+                    setSelectedModule(foundModule || null)
                   }}
                 >
                   <SelectTrigger>

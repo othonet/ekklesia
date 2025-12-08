@@ -184,7 +184,7 @@ export default function ValidationImagePage() {
             <div className="mt-6 text-sm text-muted-foreground">
               <p className="font-semibold mb-2">Como usar:</p>
               <ol className="list-decimal list-inside space-y-1">
-                <li>Clique em "Baixar Imagem" para salvar a imagem PNG</li>
+                <li>Clique em &quot;Baixar Imagem&quot; para salvar a imagem PNG</li>
                 <li>Abra seu modelo de certificado no Word</li>
                 <li>Insira a imagem no local desejado (Inserir → Imagem)</li>
                 <li>Imprima o certificado normalmente pelo Word</li>

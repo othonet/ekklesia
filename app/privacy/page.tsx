@@ -222,7 +222,7 @@ export default function PrivacyPage() {
               <div>
                 <p><strong>No aplicativo mobile:</strong></p>
                 <p className="text-sm text-muted-foreground ml-4">
-                  Acesse a tela "Privacidade" no menu "Mais" para gerenciar consentimento, exportar dados e solicitar exclusão.
+                  Acesse a tela &quot;Privacidade&quot; no menu &quot;Mais&quot; para gerenciar consentimento, exportar dados e solicitar exclusão.
                 </p>
               </div>
               <div>

@@ -116,8 +116,8 @@ export default function LoginPage() {
 
           <div className="pt-8 border-t">
             <p className="text-sm text-muted-foreground">
-              "Porque onde estiverem dois ou três reunidos em meu nome, 
-              ali estou no meio deles."
+              &quot;Porque onde estiverem dois ou três reunidos em meu nome, 
+              ali estou no meio deles.&quot;
             </p>
             <p className="text-sm text-muted-foreground mt-2 font-medium">
               Mateus 18:20

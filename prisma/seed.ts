@@ -52,7 +52,7 @@ async function main() {
 
   const createdModules = []
   for (const moduleData of modules) {
-    const module = await prisma.module.upsert({
+    const createdModule = await prisma.module.upsert({
       where: { key: moduleData.key },
       update: {
         name: moduleData.name,
@@ -63,7 +63,7 @@ async function main() {
       },
       create: moduleData,
     })
-    createdModules.push(module)
+    createdModules.push(createdModule)
   }
   console.log(`✅ ${createdModules.length} módulos criados`)
 

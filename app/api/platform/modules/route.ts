@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const module = await prisma.module.create({
+    const createdModule = await prisma.module.create({
       data: {
         key,
         name,
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json(
-      { module },
+      { module: createdModule },
       { status: 201, headers: getCorsHeaders(request) }
     )
   } catch (error: any) {
