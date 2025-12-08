@@ -19,11 +19,26 @@ import { getUserFromToken, type UserInfo } from '@/lib/utils-client'
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserInfo | null>(null)
   const [mounted, setMounted] = useState(false)
+  const [churchName, setChurchName] = useState<string>('Sistema de Gestão')
 
   useEffect(() => {
     setMounted(true)
     const userInfo = getUserFromToken()
     setUser(userInfo)
+
+    // Buscar nome da igreja
+    if (userInfo?.churchId) {
+      fetch('/api/church/name')
+        .then(res => res.json())
+        .then(data => {
+          if (data.name) {
+            setChurchName(data.name)
+          }
+        })
+        .catch(err => {
+          console.error('Erro ao buscar nome da igreja:', err)
+        })
+    }
   }, [])
 
   const handleLogout = () => {
@@ -40,7 +55,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       <div className="flex flex-1 flex-col overflow-hidden">
         <header className="flex h-16 items-center justify-between border-b bg-card px-6">
           <div className="flex items-center gap-4">
-            <h1 className="text-lg font-semibold">Sistema de Gestão</h1>
+            <h1 className="text-lg font-semibold">{churchName}</h1>
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />

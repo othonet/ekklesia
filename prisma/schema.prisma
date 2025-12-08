@@ -24,6 +24,11 @@ model User {
   churchId String?
   church   Church?  @relation(fields: [churchId], references: [id])
 
+  pastoralVisits PastoralVisit[]
+  helpedNeeds MemberNeed[]
+  faithDecisions FaithDecision[]
+  discipledDecisions FaithDecision[] @relation("Discipler")
+
   @@map("users")
 }
 
@@ -66,6 +71,11 @@ model Church {
   budgets     Budget[]
   assets      Asset[]
   ministrySchedules MinistrySchedule[]
+  pastoralVisits PastoralVisit[]
+  prayerRequests PrayerRequest[]
+  memberNeeds MemberNeed[]
+  faithDecisions FaithDecision[]
+  customModules ChurchModule[] // Módulos atribuídos individualmente (além do plano)
 
   @@map("churches")
 }
@@ -125,6 +135,10 @@ model Member {
   courses     MemberCourse[]
   certificates Certificate[]
   assets      Asset[]  // Bens sob responsabilidade do membro
+  pastoralVisits PastoralVisit[]
+  prayerRequests PrayerRequest[]
+  needs       MemberNeed[]
+  faithDecisions FaithDecision[]
 
   @@map("members")
 }
@@ -144,6 +158,7 @@ model Ministry {
 
   members     MemberMinistry[]
   schedules   MinistrySchedule[]
+  helpedNeeds MemberNeed[]
 
   @@index([leaderId])
 
@@ -756,6 +771,7 @@ model Module {
   updatedAt   DateTime @updatedAt
 
   plans       PlanModule[]
+  churchModules ChurchModule[] // Módulos atribuídos individualmente às igrejas
 
   @@map("modules")
 }
@@ -786,5 +802,251 @@ model PlanModule {
 
   @@unique([planId, moduleId])
   @@map("plan_modules")
+}
+
+// Módulos atribuídos individualmente a cada igreja (além do plano)
+model ChurchModule {
+  id        String   @id @default(cuid())
+  churchId  String
+  church    Church   @relation(fields: [churchId], references: [id], onDelete: Cascade)
+  moduleId  String
+  module    Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  
+  // Controle de ativação individual
+  active    Boolean  @default(true)
+  
+  // Data de atribuição e expiração (opcional)
+  assignedAt DateTime @default(now())
+  expiresAt  DateTime?
+  
+  // Quem atribuiu (opcional, para auditoria)
+  assignedBy String? // User ID que atribuiu
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([churchId, moduleId])
+  @@index([churchId])
+  @@index([moduleId])
+  @@index([active])
+  @@map("church_modules")
+}
+
+// Sistema de Acompanhamento Pastoral
+
+// Visitas Pastorais
+model PastoralVisit {
+  id          String   @id @default(cuid())
+  memberId   String
+  member     Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  
+  visitDate  DateTime
+  visitType  VisitType
+  location   String?
+  
+  pastorId   String
+  pastor     User     @relation(fields: [pastorId], references: [id])
+  
+  reason     VisitReason
+  notes      String?  @db.Text // Anotações privadas
+  actions    String?  @db.Text // JSON com ações realizadas
+  
+  privacy    PrivacyLevel @default(PUBLIC)
+  
+  nextSteps  String?  @db.Text
+  followUpDate DateTime?
+  
+  churchId   String
+  church     Church   @relation(fields: [churchId], references: [id])
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  @@index([memberId])
+  @@index([pastorId])
+  @@index([visitDate])
+  @@index([churchId])
+  @@map("pastoral_visits")
+}
+
+enum VisitType {
+  DOMICILIARY
+  HOSPITAL
+  OFFICE
+  PHONE
+  VIDEO_CALL
+  OTHER
+}
+
+enum VisitReason {
+  REGULAR
+  ILLNESS
+  GRIEF
+  FAMILY_CRISIS
+  CONVERSION
+  OTHER
+}
+
+enum PrivacyLevel {
+  PUBLIC      // Todos os pastores veem
+  PRIVATE     // Apenas quem registrou
+  CONFIDENTIAL // Apenas pastores sênior
+}
+
+// Pedidos de Oração
+model PrayerRequest {
+  id          String   @id @default(cuid())
+  memberId   String?
+  member     Member?  @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  
+  requestedBy String  // Nome de quem solicitou (pode não ser membro)
+  type        PrayerType
+  urgency     UrgencyLevel
+  description String?  @db.Text
+  isPrivate   Boolean  @default(false) // Se membro quer manter privado
+  
+  status      PrayerStatus @default(PENDING)
+  
+  // Quem está orando (JSON array de user IDs)
+  prayingUsers String?  @db.Text
+  
+  answer      String?  @db.Text // Testemunho/resposta quando oração é respondida
+  answeredAt  DateTime?
+  
+  churchId   String
+  church     Church   @relation(fields: [churchId], references: [id])
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  @@index([memberId])
+  @@index([status])
+  @@index([urgency])
+  @@index([churchId])
+  @@map("prayer_requests")
+}
+
+enum PrayerType {
+  PERSONAL
+  FAMILY
+  HEALTH
+  FINANCIAL
+  WORK
+  OTHER
+}
+
+enum UrgencyLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum PrayerStatus {
+  PENDING
+  PRAYING
+  ANSWERED
+  ARCHIVED
+}
+
+// Necessidades
+model MemberNeed {
+  id          String   @id @default(cuid())
+  memberId   String
+  member     Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  
+  type        NeedType
+  urgency     UrgencyLevel
+  estimatedValue Decimal? @db.Decimal(10, 2)
+  description String?  @db.Text
+  
+  status      NeedStatus @default(REQUESTED)
+  
+  // Quem está ajudando
+  helpingMinistryId String?
+  helpingMinistry   Ministry? @relation(fields: [helpingMinistryId], references: [id], onDelete: SetNull)
+  helpingUserId     String?
+  helpingUser       User?     @relation(fields: [helpingUserId], references: [id], onDelete: SetNull)
+  
+  // Histórico (JSON com histórico de atendimentos)
+  history     String?  @db.Text
+  
+  churchId   String
+  church     Church   @relation(fields: [churchId], references: [id])
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  attendedAt DateTime?
+  
+  @@index([memberId])
+  @@index([status])
+  @@index([urgency])
+  @@index([churchId])
+  @@map("member_needs")
+}
+
+enum NeedType {
+  FINANCIAL
+  FOOD
+  CLOTHING
+  FURNITURE
+  TRANSPORT
+  EMOTIONAL
+  MEDICAL
+  OTHER
+}
+
+enum NeedStatus {
+  REQUESTED
+  UNDER_REVIEW
+  APPROVED
+  ATTENDED
+  REFUSED
+}
+
+// Decisões de Fé
+model FaithDecision {
+  id          String   @id @default(cuid())
+  memberId   String
+  member     Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  
+  type        DecisionType
+  decisionDate DateTime
+  location     String?
+  
+  pastorId    String
+  pastor      User     @relation(fields: [pastorId], references: [id])
+  
+  discipleshipStatus DiscipleshipStatus @default(NOT_STARTED)
+  disciplerId String?
+  discipler   User?    @relation("Discipler", fields: [disciplerId], references: [id], onDelete: SetNull)
+  
+  nextSteps   String?  @db.Text // JSON com próximos passos
+  notes       String?  @db.Text
+  
+  churchId   String
+  church     Church   @relation(fields: [churchId], references: [id])
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  @@index([memberId])
+  @@index([decisionDate])
+  @@index([type])
+  @@index([churchId])
+  @@map("faith_decisions")
+}
+
+enum DecisionType {
+  FIRST_FAITH
+  RECONSECRATION
+  BAPTISM
+  RESTORATION
+}
+
+enum DiscipleshipStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
 }
 

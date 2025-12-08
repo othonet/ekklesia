@@ -24,8 +24,31 @@ async function main() {
     { key: 'REPORTS', name: 'Relatórios Financeiros', description: 'Relatórios financeiros detalhados', icon: 'BarChart3', route: '/dashboard/finances/reports', order: 9 },
     { key: 'BUDGETS', name: 'Orçamentos', description: 'Gerenciamento de orçamentos', icon: 'Target', route: '/dashboard/finances/budgets', order: 10 },
     { key: 'TRANSPARENCY', name: 'Transparência', description: 'Portal de transparência', icon: 'Eye', route: '/transparency', order: 11 },
-    { key: 'MOBILE_APP', name: 'App para Membros', description: 'Acesso ao aplicativo mobile para membros', icon: 'Smartphone', route: null, order: 12 },
+    { key: 'PASTORAL', name: 'Acompanhamento Pastoral', description: 'Visitas pastorais, pedidos de oração e necessidades', icon: 'Heart', route: '/dashboard/pastoral', order: 12 },
+    { key: 'MOBILE_APP', name: 'App para Membros', description: 'Acesso ao aplicativo mobile para membros', icon: 'Smartphone', route: null, order: 13 },
   ]
+
+  // Adicionar módulo PASTORAL aos planos Master (se existir)
+  const masterPlan = await prisma.plan.findUnique({ where: { key: 'MASTER' } })
+  if (masterPlan) {
+    const pastoralModule = createdModules.find((m) => m.key === 'PASTORAL')
+    if (pastoralModule) {
+      await prisma.planModule.upsert({
+        where: {
+          planId_moduleId: {
+            planId: masterPlan.id,
+            moduleId: pastoralModule.id,
+          },
+        },
+        update: {},
+        create: {
+          planId: masterPlan.id,
+          moduleId: pastoralModule.id,
+        },
+      })
+      console.log('✅ Módulo PASTORAL adicionado ao plano Master')
+    }
+  }
 
   const createdModules = []
   for (const moduleData of modules) {

@@ -20,7 +20,8 @@ import {
   User,
   Package,
   Building,
-  UserCheck
+  UserCheck,
+  Heart
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getUserFromToken, type UserInfo } from '@/lib/utils-client'
@@ -41,6 +42,7 @@ const moduleNavigationMap: Record<string, { name: string; href: string; icon: an
   REPORTS: { name: 'Relatórios Financeiros', href: '/dashboard/finances/reports', icon: BarChart3 },
   BUDGETS: { name: 'Orçamentos', href: '/dashboard/finances/budgets', icon: Target },
   TRANSPARENCY: { name: 'Transparência', href: '/transparency', icon: Eye },
+  PASTORAL: { name: 'Acompanhamento Pastoral', href: '/dashboard/pastoral', icon: Heart },
 }
 
 // Dashboard sempre disponível
@@ -137,27 +139,6 @@ export function Sidebar() {
         </div>
       </div>
       <nav className="flex-1 space-y-6 overflow-y-auto p-4">
-        {/* Seção Plataforma Multitenancy - Apenas para Super Admin */}
-        {userRole === 'ADMIN' && (
-          <div className="space-y-1">
-            <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Plataforma Multitenancy
-            </div>
-            <Link
-              href="/platform"
-              className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                pathname.startsWith('/platform')
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-              )}
-            >
-              <Building className="h-5 w-5" />
-              Gerenciar Plataforma
-            </Link>
-          </div>
-        )}
-
         {/* Seção Liderança - Apenas para líderes de ministérios */}
         {hasDashboardAccess && isLeader && (
           <div className="space-y-1">

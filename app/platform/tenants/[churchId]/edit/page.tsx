@@ -299,16 +299,23 @@ export default function EditTenantPage() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 mt-6">
-              <Link href="/platform/tenants">
+            <div className="flex justify-between items-center mt-6">
+              <Link href={`/platform/tenants/${churchId}/modules`}>
                 <Button type="button" variant="outline">
-                  Cancelar
+                  Gerenciar Módulos
                 </Button>
               </Link>
-              <Button type="submit" disabled={saving}>
-                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Salvar Alterações
-              </Button>
+              <div className="flex gap-2">
+                <Link href="/platform/tenants">
+                  <Button type="button" variant="outline">
+                    Cancelar
+                  </Button>
+                </Link>
+                <Button type="submit" disabled={saving}>
+                  {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Salvar Alterações
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

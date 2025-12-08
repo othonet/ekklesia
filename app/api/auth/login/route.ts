@@ -40,21 +40,11 @@ export async function POST(request: NextRequest) {
       path: '/',
     }
 
-    // Verificar se o usuário tem acesso à plataforma
-    const { prisma } = await import('@/lib/prisma')
-    const user = await prisma.user.findUnique({
-      where: { id: result.user.id },
-      select: { isPlatformAdmin: true },
-    })
-
-    // Se for platform admin, definir ambos os cookies
-    if (user?.isPlatformAdmin) {
-      response.cookies.set('platform_token', result.token, cookieOptions)
-      response.cookies.set('church_token', result.token, cookieOptions)
-    } else {
-      // Para outros usuários, apenas cookie da igreja
-      response.cookies.set('church_token', result.token, cookieOptions)
-    }
+    // Apenas definir church_token (login do tenant)
+    // Para acessar a plataforma, usar /platform/login
+    response.cookies.set('church_token', result.token, cookieOptions)
+    // Remover platform_token se existir (garantir separação)
+    response.cookies.delete('platform_token')
 
     return response
   } catch (error: any) {

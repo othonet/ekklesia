@@ -44,13 +44,9 @@ export default function LoginPage() {
       // Salvar token no localStorage
       localStorage.setItem('token', data.token)
       
-      // Determinar para onde redirecionar baseado no isPlatformAdmin
-      // Se for platform admin, redirecionar para plataforma
-      // Caso contrário, redirecionar para dashboard
-      const redirectTo = data.user?.isPlatformAdmin ? '/platform' : '/dashboard'
-      
-      // Usar window.location.href para forçar reload completo e garantir que o cookie seja enviado
-      window.location.href = redirectTo
+      // Sempre redirecionar para dashboard (login do tenant)
+      // Para acessar a plataforma, usar /platform/login
+      window.location.href = '/dashboard'
     } catch (err: any) {
       if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
         setError('Não foi possível conectar ao servidor. Verifique se o servidor está rodando.')
@@ -192,11 +188,19 @@ export default function LoginPage() {
                 <Button type="submit" className="w-full h-11" disabled={loading}>
                   {loading ? 'Entrando...' : 'Entrar'}
                 </Button>
-                <div className="text-center text-xs text-muted-foreground">
-                  Ao entrar, você concorda com nossa{' '}
-                  <a href="/privacy" target="_blank" className="text-primary hover:underline">
-                    Política de Privacidade
-                  </a>
+                <div className="text-center text-xs text-muted-foreground space-y-2">
+                  <p>
+                    Ao entrar, você concorda com nossa{' '}
+                    <a href="/privacy" target="_blank" className="text-primary hover:underline">
+                      Política de Privacidade
+                    </a>
+                  </p>
+                  <p className="pt-2 border-t">
+                    É administrador da plataforma?{' '}
+                    <a href="/platform/login" className="text-primary hover:underline font-medium">
+                      Acesse aqui
+                    </a>
+                  </p>
                 </div>
               </form>
             </CardContent>

@@ -6,7 +6,7 @@ import { DashboardLayout } from '@/components/dashboard-layout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from '@/hooks/use-toast'
-import { ArrowLeft, Calendar, Users, BookOpen, Award, TrendingUp } from 'lucide-react'
+import { ArrowLeft, Calendar, Users, BookOpen, Award, TrendingUp, Heart } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Dialog,
@@ -23,6 +23,7 @@ import { BaptismTab } from '@/components/member-tabs/baptism-tab'
 import { DiscipleshipTab } from '@/components/member-tabs/discipleship-tab'
 import { CourseTab } from '@/components/member-tabs/course-tab'
 import { MinistryTab } from '@/components/member-tabs/ministry-tab'
+import { PastoralTab } from '@/components/member-tabs/pastoral-tab'
 
 interface Member {
   id: string
@@ -417,7 +418,7 @@ export default function MemberDetailPage() {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="attendance" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="attendance">
                   <Calendar className="h-4 w-4 mr-2" />
                   Frequência
@@ -437,6 +438,10 @@ export default function MemberDetailPage() {
                 <TabsTrigger value="courses">
                   <TrendingUp className="h-4 w-4 mr-2" />
                   Cursos
+                </TabsTrigger>
+                <TabsTrigger value="pastoral">
+                  <Heart className="h-4 w-4 mr-2" />
+                  Acompanhamento
                 </TabsTrigger>
               </TabsList>
 
@@ -458,6 +463,10 @@ export default function MemberDetailPage() {
 
               <TabsContent value="courses" className="mt-4">
                 <CourseTab memberId={member.id} />
+              </TabsContent>
+
+              <TabsContent value="pastoral" className="mt-4">
+                <PastoralTab memberId={member.id} />
               </TabsContent>
             </Tabs>
           </CardContent>

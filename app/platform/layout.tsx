@@ -52,8 +52,8 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
     // Remover apenas o cookie da plataforma (platform_token)
     localStorage.removeItem('token')
     document.cookie = 'platform_token=; path=/; max-age=0; SameSite=Lax'
-    // Não remover church_token para manter sessão da igreja
-    window.location.href = '/login'
+    // Redirecionar para login da plataforma
+    window.location.href = '/platform/login'
   }
 
   return (
