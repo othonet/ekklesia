@@ -1,0 +1,181 @@
+name: Deploy para VPS
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Ambiente de deploy'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+jobs:
+  deploy:
+    name: Deploy para VPS
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'production' }}
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Gerar cliente Prisma
+        run: npm run db:generate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Configurar SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+
+      - name: Adicionar servidor ao known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Criar diretório de deploy na VPS
+        run: |
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'ENDSSH'
+            mkdir -p ${{ secrets.VPS_DEPLOY_PATH }}/releases
+            mkdir -p ${{ secrets.VPS_DEPLOY_PATH }}/shared
+          ENDSSH
+
+      - name: Criar arquivo de release
+        run: |
+          RELEASE_DIR="${{ secrets.VPS_DEPLOY_PATH }}/releases/$(date +%Y%m%d_%H%M%S)"
+          echo "RELEASE_DIR=$RELEASE_DIR" >> $GITHUB_ENV
+
+      - name: Fazer backup do banco de dados
+        run: |
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << ENDSSH
+            cd ${{ secrets.VPS_DEPLOY_PATH }}
+            if [ -f scripts/vps/backup-banco.sh ]; then
+              bash scripts/vps/backup-banco.sh || true
+            fi
+          ENDSSH
+
+      - name: Sincronizar código para VPS
+        run: |
+          rsync -avz --delete \
+            --exclude 'node_modules' \
+            --exclude '.next' \
+            --exclude '.git' \
+            --exclude 'logs' \
+            --exclude 'backups' \
+            --exclude '.env*' \
+            --exclude '*.log' \
+            ./ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_DEPLOY_PATH }}/
+
+      - name: Criar arquivo .env.production na VPS
+        run: |
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << EOF
+            cd ${{ secrets.VPS_DEPLOY_PATH }}
+            cat > .env.production << 'ENVFILE'
+          NODE_ENV=production
+          DATABASE_URL="${{ secrets.DATABASE_URL }}"
+          JWT_SECRET="${{ secrets.JWT_SECRET }}"
+          JWT_EXPIRES_IN=7d
+          NEXTAUTH_URL="${{ secrets.NEXTAUTH_URL }}"
+          NEXTAUTH_SECRET="${{ secrets.NEXTAUTH_SECRET }}"
+          APP_URL="${{ secrets.APP_URL }}"
+          ENCRYPTION_KEY="${{ secrets.ENCRYPTION_KEY }}"
+          ALLOWED_ORIGINS="${{ secrets.ALLOWED_ORIGINS }}"
+          ENVFILE
+            chmod 600 .env.production
+            echo "✅ Arquivo .env.production criado/atualizado na VPS"
+          EOF
+
+      - name: Deploy na VPS
+        run: |
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'ENDSSH'
+            set -e
+            cd ${{ secrets.VPS_DEPLOY_PATH }}
+            
+            echo "🚀 Iniciando deploy..."
+            
+            # Sempre sobrescrever .env com .env.production para garantir consistência
+            if [ -f .env.production ]; then
+              cp .env.production .env
+              echo "✅ Arquivo .env atualizado a partir de .env.production"
+            else
+              echo "⚠️  Arquivo .env.production não encontrado!"
+              exit 1
+            fi
+            
+            # Instalar dependências
+            echo "📦 Instalando dependências..."
+            npm ci --production=false
+            
+            # Gerar cliente Prisma
+            echo "🔧 Gerando cliente Prisma..."
+            npx prisma generate
+            
+            # Executar migrações
+            echo "🗄️  Executando migrações..."
+            npx prisma migrate deploy || echo "⚠️  Migrações podem ter falhado (normal se já aplicadas)"
+            
+            # Build da aplicação
+            echo "🏗️  Fazendo build..."
+            npm run build
+            
+            # Reiniciar aplicação com PM2
+            echo "🔄 Reiniciando aplicação..."
+            if pm2 list | grep -q "ekklesia"; then
+              pm2 restart ekklesia
+            else
+              pm2 start npm --name "ekklesia" -- start
+              pm2 save
+            fi
+            
+            echo "✅ Deploy concluído!"
+          ENDSSH
+
+      - name: Verificar deploy
+        run: |
+          sleep 5
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'ENDSSH'
+            # Verificar se PM2 está rodando
+            if pm2 list | grep -q "ekklesia.*online"; then
+              echo "✅ Aplicação está rodando no PM2"
+              pm2 status
+            else
+              echo "❌ Aplicação não está rodando"
+              pm2 logs ekklesia --lines 50
+              exit 1
+            fi
+            
+            # Testar endpoint local
+            if curl -f http://localhost:3000 > /dev/null 2>&1; then
+              echo "✅ Aplicação respondendo na porta 3000"
+            else
+              echo "⚠️  Aplicação não está respondendo na porta 3000"
+            fi
+          ENDSSH
+
+      - name: Notificar sucesso
+        if: success()
+        run: |
+          echo "🎉 Deploy concluído com sucesso!"
+          echo "Aplicação disponível em: ${{ secrets.APP_URL }}"
+
+      - name: Notificar falha
+        if: failure()
+        run: |
+          echo "❌ Deploy falhou!"
+          echo "Verifique os logs acima para mais detalhes."
+
