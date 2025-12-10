@@ -26,8 +26,9 @@
 **Correção:**
 - ✅ **DATABASE_URL configurada na VPS:**
   ```
-  DATABASE_URL="mysql://root:admin123@localhost:3306/ekklesia"
+  DATABASE_URL="mysql://root:***@localhost:3306/ekklesia"
   ```
+  ⚠️ **ATENÇÃO:** Não exponha credenciais reais na documentação!
 - Verificar e ajustar secrets do GitHub Actions (`DATABASE_URL`) com as mesmas credenciais
 - Validar credenciais MySQL no servidor VPS
 - Testar conexão: `mysql -u root -padmin123 -h localhost`
