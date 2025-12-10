@@ -12,7 +12,11 @@ export const createFinanceSchema = z.object({
   }),
   category: z.string().optional().or(z.literal('')),
   date: z.string().min(1, 'Data é obrigatória'),
-  donationType: z.enum(['TITHE', 'OFFERING', 'CONTRIBUTION']).optional().or(z.literal('')),
+  donationType: z.union([
+    z.enum(['TITHE', 'OFFERING', 'CONTRIBUTION']),
+    z.literal(''),
+    z.literal('none'),
+  ]).optional(),
   method: z.string().optional().or(z.literal('')),
   memberId: z.string().optional().or(z.literal('')),
   paymentId: z.string().optional().or(z.literal('')),

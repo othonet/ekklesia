@@ -350,10 +350,10 @@ export async function DELETE(
       entityType: 'MEMBER',
       entityId: resolvedParams.id,
       description: `Soft delete de membro: ${member.name} (exclusão permanente agendada para ${scheduledPermanentDeletion.toLocaleDateString('pt-BR')})`,
-      metadata: JSON.stringify({
+      metadata: {
         softDelete: true,
         scheduledPermanentDeletion: scheduledPermanentDeletion.toISOString(),
-      }),
+      },
       ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
       userAgent: request.headers.get('user-agent') || 'unknown',
     })

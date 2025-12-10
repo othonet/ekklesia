@@ -63,6 +63,17 @@ export async function PUT(
       )
     }
 
+    // Normalizar donationType: remover 'none' e strings vazias
+    const normalizedDonationType = (() => {
+      if (!donationType) return null
+      const dt = String(donationType)
+      if (dt === '' || dt === 'none') return null
+      if (dt === 'TITHE' || dt === 'OFFERING' || dt === 'CONTRIBUTION') {
+        return dt as 'TITHE' | 'OFFERING' | 'CONTRIBUTION'
+      }
+      return null
+    })()
+
     const finance = await prisma.finance.findFirst({
       where: { id, churchId: user.churchId },
     })
@@ -79,7 +90,7 @@ export async function PUT(
         type,
         category: category && category !== '' ? category : null,
         date: new Date(date),
-        donationType: donationType && donationType !== '' && donationType !== 'none' ? donationType : null,
+        donationType: normalizedDonationType,
         method: method && method !== '' ? method : null,
         memberId: memberId && memberId !== '' && memberId !== 'none' ? memberId : null,
       },
