@@ -102,3 +102,5 @@ flutter doctor -v
 
 **Execute os comandos acima e me avise quando terminar!**
 
+
+

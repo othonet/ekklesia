@@ -139,3 +139,5 @@ flutter build ios --release
 
 **Execute os comandos acima e me avise quando terminar!**
 
+
+
