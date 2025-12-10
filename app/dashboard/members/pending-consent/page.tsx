@@ -96,6 +96,7 @@ export default function PendingConsentPage() {
               </div>
             ) : members.length === 0 ? (
               <EmptyState
+                icon={AlertCircle}
                 title="Nenhum membro pendente"
                 description="Todos os membros confirmaram seu consentimento."
               />

@@ -19,6 +19,7 @@ interface Certificate {
   type: string
   title: string
   issuedDate: string
+  validationHash?: string
   member: {
     name: string
   }

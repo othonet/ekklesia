@@ -64,7 +64,7 @@ export default function EditPlanPage() {
             description: plan.description || '',
             price: plan.price?.toString() || '',
             active: plan.active,
-            moduleIds: plan.modules.map((pm) => pm.module.id),
+            moduleIds: plan.modules.map((pm: { module: { id: string } }) => pm.module.id),
           })
         }
       }

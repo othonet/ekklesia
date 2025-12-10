@@ -160,7 +160,7 @@ export function CourseTab({ memberId }: { memberId: string }) {
                     <div className="flex items-center gap-2">
                       <div className="font-semibold">{mc.course.name}</div>
                       {mc.certificate && (
-                        <Award className="h-4 w-4 text-yellow-600" title="Certificado emitido" />
+                        <Award className="h-4 w-4 text-yellow-600" />
                       )}
                     </div>
                     <div className="text-sm text-muted-foreground">

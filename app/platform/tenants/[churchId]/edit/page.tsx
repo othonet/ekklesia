@@ -188,7 +188,7 @@ export default function EditTenantPage() {
                 <Label htmlFor="cnpj">CNPJ</Label>
                 <Input
                   id="cnpj"
-                  value={formData.cnpj}
+                  value={formData.cnpj || ''}
                   onChange={(e) =>
                     setFormData({ ...formData, cnpj: e.target.value })
                   }
@@ -199,7 +199,7 @@ export default function EditTenantPage() {
                 <Input
                   id="email"
                   type="email"
-                  value={formData.email}
+                  value={formData.email || ''}
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
                   }
@@ -209,7 +209,7 @@ export default function EditTenantPage() {
                 <Label htmlFor="phone">Telefone</Label>
                 <Input
                   id="phone"
-                  value={formData.phone}
+                  value={formData.phone || ''}
                   onChange={(e) =>
                     setFormData({ ...formData, phone: e.target.value })
                   }
@@ -219,7 +219,7 @@ export default function EditTenantPage() {
                 <Label htmlFor="pastorName">Nome do Pastor</Label>
                 <Input
                   id="pastorName"
-                  value={formData.pastorName}
+                  value={formData.pastorName || ''}
                   onChange={(e) =>
                     setFormData({ ...formData, pastorName: e.target.value })
                   }
@@ -230,7 +230,7 @@ export default function EditTenantPage() {
                 <Input
                   id="website"
                   type="url"
-                  value={formData.website}
+                  value={formData.website || ''}
                   onChange={(e) =>
                     setFormData({ ...formData, website: e.target.value })
                   }
@@ -240,7 +240,7 @@ export default function EditTenantPage() {
                 <Label htmlFor="address">Endereço</Label>
                 <Input
                   id="address"
-                  value={formData.address}
+                  value={formData.address || ''}
                   onChange={(e) =>
                     setFormData({ ...formData, address: e.target.value })
                   }
@@ -250,7 +250,7 @@ export default function EditTenantPage() {
                 <Label htmlFor="city">Cidade</Label>
                 <Input
                   id="city"
-                  value={formData.city}
+                  value={formData.city || ''}
                   onChange={(e) =>
                     setFormData({ ...formData, city: e.target.value })
                   }
@@ -260,7 +260,7 @@ export default function EditTenantPage() {
                 <Label htmlFor="state">Estado</Label>
                 <Input
                   id="state"
-                  value={formData.state}
+                  value={formData.state || ''}
                   onChange={(e) =>
                     setFormData({ ...formData, state: e.target.value })
                   }
@@ -270,7 +270,7 @@ export default function EditTenantPage() {
                 <Label htmlFor="zipCode">CEP</Label>
                 <Input
                   id="zipCode"
-                  value={formData.zipCode}
+                  value={formData.zipCode || ''}
                   onChange={(e) =>
                     setFormData({ ...formData, zipCode: e.target.value })
                   }

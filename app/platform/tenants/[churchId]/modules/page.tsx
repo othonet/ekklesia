@@ -412,9 +412,9 @@ export default function TenantModulesPage() {
               <div className="space-y-2">
                 <Label>Selecione o Módulo</Label>
                 <Select
-                  value={selectedModule?.id || ''}
+                  value={selectedModule ? selectedModule.id : ''}
                   onValueChange={(value) => {
-                    const foundModule = data.availableModules.find((m) => m.id === value)
+                    const foundModule = data.availableModules.find((m: Module) => m.id === value)
                     setSelectedModule(foundModule || null)
                   }}
                 >
