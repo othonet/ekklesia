@@ -3,6 +3,18 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/api-helpers'
 import { getCorsHeaders } from '@/lib/cors'
 
+type AlertSeverity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
+
+interface PastoralAlert {
+  type: string
+  severity: AlertSeverity
+  title: string
+  description: string
+  memberId: string | null
+  memberName: string
+  [key: string]: any
+}
+
 export async function GET(request: NextRequest) {
   try {
     const user = getCurrentUser(request)
@@ -22,7 +34,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const alerts: any[] = []
+    const alerts: PastoralAlert[] = []
 
     // 1. Membros que não frequentam há muito tempo
     const daysWithoutAttendance = 30 // Configurável
@@ -164,7 +176,7 @@ export async function GET(request: NextRequest) {
         title: `Necessidade crítica: ${need.member.name}`,
         description: `${need.type} - ${need.description || 'Sem descrição'}`,
         memberId: need.memberId,
-        memberName: need.member.name,
+        memberName: need.member.name || 'Membro desconhecido',
         needId: need.id,
         needType: need.type,
       })
@@ -202,8 +214,8 @@ export async function GET(request: NextRequest) {
         severity: 'HIGH',
         title: `Pedido de oração urgente sem resposta há ${daysAgo} dias`,
         description: `${prayer.requestedBy} - ${prayer.type}`,
-        memberId: prayer.memberId,
-        memberName: prayer.member?.name || prayer.requestedBy,
+        memberId: prayer.memberId || null,
+        memberName: prayer.member?.name || prayer.requestedBy || 'Membro desconhecido',
         prayerId: prayer.id,
         daysAgo,
       })
@@ -262,8 +274,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Ordenar por severidade
-    const severityOrder = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 }
-    alerts.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity])
+    const severityOrder: Record<AlertSeverity, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 }
+    alerts.sort((a, b) => {
+      const aOrder = severityOrder[a.severity] ?? 999
+      const bOrder = severityOrder[b.severity] ?? 999
+      return aOrder - bOrder
+    })
 
     return NextResponse.json(
       {
