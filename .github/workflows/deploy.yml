@@ -111,6 +111,11 @@ jobs:
             
             echo "🚀 Iniciando deploy..."
             
+            # Remover diretórios que não devem estar na VPS
+            echo "🧹 Removendo diretórios desnecessários..."
+            rm -rf mobile mobile-expo-temp ekklesia-build-temp 2>/dev/null || true
+            echo "✅ Diretórios mobile removidos (se existiam)"
+            
             # Sempre sobrescrever .env com .env.production para garantir consistência
             if [ -f .env.production ]; then
               cp .env.production .env
