@@ -67,29 +67,66 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Se estiver na página de login da plataforma e tiver platform_token válido, redirecionar
-  if (isPlatformLoginPage && request.cookies.get('platform_token')) {
-    const platformToken = request.cookies.get('platform_token')?.value
-    if (platformToken) {
-      const payload = await verifyToken(platformToken)
-      if (payload) {
-        // Verificar se é realmente platform admin antes de redirecionar
-        if (payload.isPlatformAdmin === true) {
-          return NextResponse.redirect(new URL('/platform', request.url))
-        } else {
-          // Se não tiver flag no token, verificar no banco
-          const { isPlatformAdmin } = await import('@/lib/platform-auth')
-          const isAdmin = await isPlatformAdmin(request)
-          if (isAdmin) {
+  // Permitir acesso às rotas públicas ANTES de verificar tokens:
+  // - Autenticação (login do tenant)
+  // - Login da plataforma
+  // - APIs de membros (fazem verificação própria via JWT no header)
+  // - Política de privacidade (página informativa)
+  // - APIs de privacidade (para uso do app mobile)
+  // - Validação de certificados
+  if (isAuthPage || isPlatformLoginPage || isApiAuth || isApiMembers || isPrivacyPolicyPage || isApiPrivacy || isValidateCertificate || isApiValidate) {
+    // Se estiver na página de login da plataforma e tiver platform_token válido, redirecionar
+    if (isPlatformLoginPage && request.cookies.get('platform_token')) {
+      const platformToken = request.cookies.get('platform_token')?.value
+      if (platformToken) {
+        const payload = await verifyToken(platformToken)
+        if (payload) {
+          // Verificar se é realmente platform admin antes de redirecionar
+          if (payload.isPlatformAdmin === true) {
             return NextResponse.redirect(new URL('/platform', request.url))
+          } else {
+            // Se não tiver flag no token, verificar no banco
+            const { isPlatformAdmin } = await import('@/lib/platform-auth')
+            const isAdmin = await isPlatformAdmin(request)
+            if (isAdmin) {
+              return NextResponse.redirect(new URL('/platform', request.url))
+            }
+            // Se não for admin, limpar cookie e permitir login
+            const response = NextResponse.next()
+            response.cookies.delete('platform_token')
+            return response
           }
-          // Se não for admin, limpar cookie e permitir login
-          const response = NextResponse.next()
-          response.cookies.delete('platform_token')
-          return response
         }
       }
     }
+    
+    // Adicionar headers CORS para APIs (especialmente para app mobile)
+    if (isApiAuth || isApiMembers || isApiPrivacy) {
+      const response = NextResponse.next()
+      
+      // CORS seguro: verificar origem permitida
+      const origin = request.headers.get('origin')
+      const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || []
+      const isProduction = process.env.NODE_ENV === 'production'
+      
+      // Em produção, verificar origem permitida
+      // Em desenvolvimento ou para app mobile, permitir todas (necessário para desenvolvimento local)
+      if (isProduction && allowedOrigins.length > 0) {
+        if (origin && allowedOrigins.includes(origin)) {
+          response.headers.set('Access-Control-Allow-Origin', origin)
+        }
+        // Se origem não permitida, não definir CORS (bloqueia requisição)
+      } else {
+        // Desenvolvimento: permitir todas as origens (necessário para app mobile e dev local)
+        response.headers.set('Access-Control-Allow-Origin', '*')
+      }
+      
+      response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+      response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+      response.headers.set('Access-Control-Allow-Credentials', 'true')
+      return response
+    }
+    return NextResponse.next()
   }
 
   // Bloquear acesso à plataforma se não tiver platform_token
@@ -137,43 +174,6 @@ export async function middleware(request: NextRequest) {
       console.log('[TENANT] Acesso negado ao dashboard - sem church_token')
       return NextResponse.redirect(new URL('/login', request.url))
     }
-  }
-
-  // Permitir acesso às rotas públicas:
-  // - Autenticação (login do tenant)
-  // - Login da plataforma
-  // - APIs de membros (fazem verificação própria via JWT no header)
-  // - Política de privacidade (página informativa)
-  // - APIs de privacidade (para uso do app mobile)
-  // - Validação de certificados
-  if (isAuthPage || isPlatformLoginPage || isApiAuth || isApiMembers || isPrivacyPolicyPage || isApiPrivacy || isValidateCertificate || isApiValidate) {
-    // Adicionar headers CORS para APIs (especialmente para app mobile)
-    if (isApiAuth || isApiMembers || isApiPrivacy) {
-      const response = NextResponse.next()
-      
-      // CORS seguro: verificar origem permitida
-      const origin = request.headers.get('origin')
-      const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || []
-      const isProduction = process.env.NODE_ENV === 'production'
-      
-      // Em produção, verificar origem permitida
-      // Em desenvolvimento ou para app mobile, permitir todas (necessário para desenvolvimento local)
-      if (isProduction && allowedOrigins.length > 0) {
-        if (origin && allowedOrigins.includes(origin)) {
-          response.headers.set('Access-Control-Allow-Origin', origin)
-        }
-        // Se origem não permitida, não definir CORS (bloqueia requisição)
-      } else {
-        // Desenvolvimento: permitir todas as origens (necessário para app mobile e dev local)
-        response.headers.set('Access-Control-Allow-Origin', '*')
-      }
-      
-      response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-      response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-      response.headers.set('Access-Control-Allow-Credentials', 'true')
-      return response
-    }
-    return NextResponse.next()
   }
 
   // Verificar token para rotas protegidas
