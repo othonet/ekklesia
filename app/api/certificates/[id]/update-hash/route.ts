@@ -33,7 +33,10 @@ export async function POST(
     }
 
     // Gerar novo hash com formato atualizado
-    const secret = process.env.CERTIFICATE_SECRET || process.env.JWT_SECRET || 'default-secret'
+    const secret = process.env.CERTIFICATE_SECRET || process.env.JWT_SECRET
+    if (!secret) {
+      throw new Error('CERTIFICATE_SECRET ou JWT_SECRET não configurado. Configure uma das variáveis de ambiente.')
+    }
     const newHash = generateValidationHash(
       certificate.certificateNumber,
       certificate.memberId,

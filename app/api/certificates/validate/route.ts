@@ -142,7 +142,10 @@ export async function GET(request: NextRequest) {
 
     // Validar hash incluindo informações críticas (nome e título)
     // Se alguém alterar o nome no documento físico, o hash não corresponderá
-    const secret = process.env.CERTIFICATE_SECRET || process.env.JWT_SECRET || 'default-secret'
+    const secret = process.env.CERTIFICATE_SECRET || process.env.JWT_SECRET
+    if (!secret) {
+      throw new Error('CERTIFICATE_SECRET ou JWT_SECRET não configurado. Configure uma das variáveis de ambiente.')
+    }
     
     console.log('Validando certificado:', {
       number: certificate.certificateNumber,

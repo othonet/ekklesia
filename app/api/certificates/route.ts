@@ -274,7 +274,10 @@ export async function POST(request: NextRequest) {
 
     const issuedDate = new Date()
     const certificateNumber = generateCertificateNumber()
-    const secret = process.env.CERTIFICATE_SECRET || process.env.JWT_SECRET || 'default-secret'
+    const secret = process.env.CERTIFICATE_SECRET || process.env.JWT_SECRET
+    if (!secret) {
+      throw new Error('CERTIFICATE_SECRET ou JWT_SECRET não configurado. Configure uma das variáveis de ambiente.')
+    }
     const validationHash = generateValidationHash(
       certificateNumber,
       memberId,
