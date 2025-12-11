@@ -84,11 +84,19 @@ jobs:
             --exclude 'ekklesia-build-temp' \
             ./ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_DEPLOY_PATH }}/
 
-      - name: Criar arquivo .env.production na VPS
+      - name: Atualizar arquivo .env.production na VPS (preservando variáveis existentes)
         run: |
-          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << EOF
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
             cd ${{ secrets.VPS_DEPLOY_PATH }}
-            cat > .env.production << 'ENVFILE'
+            
+            # Fazer backup do arquivo existente se houver
+            if [ -f .env.production ]; then
+              cp .env.production .env.production.backup.$(date +%Y%m%d_%H%M%S)
+              echo "📦 Backup do .env.production criado"
+            fi
+            
+            # Criar arquivo temporário com variáveis dos secrets
+            cat > .env.production.new << 'ENVFILE'
           NODE_ENV=production
           DATABASE_URL="${{ secrets.DATABASE_URL }}"
           JWT_SECRET="${{ secrets.JWT_SECRET }}"
@@ -99,8 +107,36 @@ jobs:
           ENCRYPTION_KEY="${{ secrets.ENCRYPTION_KEY }}"
           ALLOWED_ORIGINS="${{ secrets.ALLOWED_ORIGINS }}"
           ENVFILE
+            
+            # Se já existe .env.production, fazer merge preservando variáveis customizadas
+            if [ -f .env.production ]; then
+              echo "🔄 Fazendo merge com variáveis existentes..."
+              
+              # Extrair variáveis dos secrets (chaves conhecidas)
+              SECRET_VARS="NODE_ENV|DATABASE_URL|JWT_SECRET|JWT_EXPIRES_IN|NEXTAUTH_URL|NEXTAUTH_SECRET|APP_URL|ENCRYPTION_KEY|ALLOWED_ORIGINS"
+              
+              # Preservar variáveis customizadas que não estão nos secrets
+              grep -vE "^($SECRET_VARS)=" .env.production | grep -v "^#" | grep -v "^$" > .env.custom || true
+              
+              # Combinar: variáveis dos secrets + variáveis customizadas preservadas
+              cat .env.production.new > .env.production
+              if [ -s .env.custom ]; then
+                echo "" >> .env.production
+                echo "# Variáveis customizadas preservadas do deploy anterior" >> .env.production
+                cat .env.custom >> .env.production
+                echo "✅ Variáveis customizadas preservadas"
+              fi
+              
+              rm -f .env.production.new .env.custom
+              echo "✅ Arquivo .env.production atualizado (variáveis dos secrets + customizadas preservadas)"
+            else
+              # Se não existe, criar novo arquivo
+              mv .env.production.new .env.production
+              echo "✅ Arquivo .env.production criado pela primeira vez"
+            fi
+            
             chmod 600 .env.production
-            echo "✅ Arquivo .env.production criado/atualizado na VPS"
+            echo "✅ Permissões do .env.production configuradas"
           EOF
 
       - name: Deploy na VPS
@@ -116,12 +152,20 @@ jobs:
             rm -rf mobile mobile-expo-temp ekklesia-build-temp 2>/dev/null || true
             echo "✅ Diretórios mobile removidos (se existiam)"
             
-            # Sempre sobrescrever .env com .env.production para garantir consistência
+            # Sincronizar .env com .env.production (preservando .env se não houver .env.production)
             if [ -f .env.production ]; then
+              # Fazer backup do .env atual se existir
+              if [ -f .env ]; then
+                cp .env .env.backup.$(date +%Y%m%d_%H%M%S) || true
+              fi
               cp .env.production .env
-              echo "✅ Arquivo .env atualizado a partir de .env.production"
+              echo "✅ Arquivo .env sincronizado com .env.production"
+            elif [ -f .env ]; then
+              # Se não houver .env.production mas houver .env, preservar .env
+              echo "⚠️  Arquivo .env.production não encontrado, usando .env existente"
             else
-              echo "⚠️  Arquivo .env.production não encontrado!"
+              echo "❌ Nenhum arquivo de ambiente encontrado (.env ou .env.production)!"
+              echo "💡 Configure as variáveis de ambiente antes de continuar."
               exit 1
             fi
             
