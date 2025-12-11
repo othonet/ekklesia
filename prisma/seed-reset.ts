@@ -73,7 +73,9 @@ async function main() {
     await prisma.event.deleteMany({})
     console.log('✅ Eventos deletados')
 
-    await prisma.ministrySchedule({}).catch(() => {}) // Pode não existir
+    await prisma.ministryScheduleMember.deleteMany({})
+    console.log('✅ Membros de escalas deletados')
+
     await prisma.ministrySchedule.deleteMany({})
     console.log('✅ Escalas de ministérios deletadas')
 
