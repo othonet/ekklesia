@@ -18,11 +18,11 @@ export async function GET(
 
     const { id } = await Promise.resolve(params)
 
-    const module = await prisma.module.findUnique({
+    const moduleData = await prisma.module.findUnique({
       where: { id },
     })
 
-    if (!module) {
+    if (!moduleData) {
       return NextResponse.json(
         { error: 'Módulo não encontrado' },
         { status: 404, headers: getCorsHeaders(request) }
@@ -30,7 +30,7 @@ export async function GET(
     }
 
     return NextResponse.json(
-      { module },
+      { module: moduleData },
       { headers: getCorsHeaders(request) }
     )
   } catch (error: any) {
@@ -59,7 +59,7 @@ export async function PUT(
     const body = await request.json()
     const { name, description, icon, route, order, active } = body
 
-    const updatedModule = await prisma.module.update({
+    const updatedModuleData = await prisma.module.update({
       where: { id },
       data: {
         ...(name !== undefined && { name }),
@@ -72,7 +72,7 @@ export async function PUT(
     })
 
     return NextResponse.json(
-      { module: updatedModule },
+      { module: updatedModuleData },
       { headers: getCorsHeaders(request) }
     )
   } catch (error: any) {
