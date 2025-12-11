@@ -29,7 +29,7 @@ import { useChurchModules } from '@/lib/module-permissions-client'
 import { canAccessRoute, hasModuleAccess } from '@/lib/permissions'
 import * as Icons from 'lucide-react'
 
-// Mapeamento de módulos para navegação
+// Mapeamento de módulos para navegação (chaves em inglês)
 const moduleNavigationMap: Record<string, { name: string; href: string; icon: any }> = {
   MEMBERS: { name: 'Membros', href: '/dashboard/members', icon: Users },
   FINANCES: { name: 'Finanças', href: '/dashboard/finances', icon: DollarSign },
@@ -43,6 +43,32 @@ const moduleNavigationMap: Record<string, { name: string; href: string; icon: an
   BUDGETS: { name: 'Orçamentos', href: '/dashboard/finances/budgets', icon: Target },
   TRANSPARENCY: { name: 'Transparência', href: '/transparency', icon: Eye },
   PASTORAL: { name: 'Acompanhamento Pastoral', href: '/dashboard/pastoral', icon: Heart },
+}
+
+// Mapeamento de chaves em português para inglês (compatibilidade)
+const keyTranslationMap: Record<string, string> = {
+  'MEMBROS': 'MEMBERS',
+  'FINANÇAS': 'FINANCES',
+  'MINISTÉRIOS': 'MINISTRIES',
+  'PATRIMÔNIO': 'ASSETS',
+  'EVENTOS': 'EVENTS',
+  'CURSOS': 'COURSES',
+  'CERTIFICADOS': 'CERTIFICATES',
+  'ANALYTICS': 'ANALYTICS',
+  'RELATÓRIOS': 'REPORTS',
+  'ORÇAMENTOS': 'BUDGETS',
+  'TRANSPARÊNCIA': 'TRANSPARENCY',
+  'PASTORAL': 'PASTORAL',
+}
+
+// Função para normalizar a chave do módulo
+function normalizeModuleKey(key: string): string {
+  // Se já está em inglês, retorna como está
+  if (moduleNavigationMap[key]) {
+    return key
+  }
+  // Tenta traduzir de português para inglês
+  return keyTranslationMap[key] || key
 }
 
 // Dashboard sempre disponível
@@ -125,19 +151,22 @@ export function Sidebar() {
         // Filtrar módulos baseado em permissões
         ...modules
           .filter((m) => {
+            // Normalizar a chave do módulo (português -> inglês)
+            const normalizedKey = normalizeModuleKey(m.key)
+            
             // Verificar se o módulo tem rota definida e está no mapeamento
             if (!m.route) {
               console.warn(`Módulo ${m.key} não tem rota definida`)
               return false
             }
             
-            if (!moduleNavigationMap[m.key]) {
-              console.warn(`Módulo ${m.key} não está no moduleNavigationMap`)
+            if (!moduleNavigationMap[normalizedKey]) {
+              console.warn(`Módulo ${m.key} (normalizado: ${normalizedKey}) não está no moduleNavigationMap`)
               return false
             }
             
             // Verificar se o usuário tem permissão para acessar o módulo
-            const moduleKeyLower = m.key.toLowerCase()
+            const moduleKeyLower = normalizedKey.toLowerCase()
             const hasAccess = hasModuleAccess(userRole, moduleKeyLower)
             
             if (!hasAccess) {
@@ -146,10 +175,13 @@ export function Sidebar() {
             
             return hasAccess
           })
-          .map((m) => ({
-            ...moduleNavigationMap[m.key],
-            icon: m.icon ? (Icons as any)[m.icon] || LayoutDashboard : LayoutDashboard,
-          }))
+          .map((m) => {
+            const normalizedKey = normalizeModuleKey(m.key)
+            return {
+              ...moduleNavigationMap[normalizedKey],
+              icon: m.icon ? (Icons as any)[m.icon] || LayoutDashboard : LayoutDashboard,
+            }
+          })
           .sort((a, b) => {
             // Manter ordem do dashboard primeiro
             if (a.href === '/dashboard') return -1
