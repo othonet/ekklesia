@@ -17,7 +17,8 @@
     "delete:old-donations": "node scripts/delete-old-donations.js",
     "lgpd:migrate": "node scripts/migrate-encrypt-existing-data.js",
     "lgpd:test": "node scripts/test-lgpd-features.js",
-    "lgpd:cleanup": "node scripts/cleanup-expired-data.js"
+    "lgpd:cleanup": "node scripts/cleanup-expired-data.js",
+    "validate:env": "tsx scripts/validar-env.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
