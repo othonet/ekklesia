@@ -14,18 +14,23 @@ Este documento detalha os 3 próximos passos sugeridos para melhorar a arquitetu
 
 ```
 ❌ app/dashboard/admin/          → Código antigo (duplicado)
-   ├── page.tsx                  → Dashboard admin
+   ├── page.tsx                  → Dashboard admin (tem aniversariantes - ERRADO!)
    ├── tenants/page.tsx          → Lista de tenants
    ├── tenants/new/page.tsx      → Criar tenant
    ├── plans/page.tsx            → Gerenciar planos
    └── churches/page.tsx         → Lista de igrejas
 
 ✅ app/platform/                 → Código novo (correto)
-   ├── page.tsx                  → Dashboard plataforma
+   ├── page.tsx                  → Dashboard plataforma (sem aniversariantes - CORRETO!)
    ├── tenants/page.tsx          → Lista de tenants
    ├── tenants/new/page.tsx      → Criar tenant
    └── plans/page.tsx            → Gerenciar planos
 ```
+
+**⚠️ Importante:** 
+- A plataforma gerencia apenas **tenants, planos e módulos**
+- Aniversariantes é funcionalidade do **tenant admin** (`/dashboard`), não da plataforma
+- O `/dashboard/admin/page.tsx` tem aniversariantes porque foi confusão inicial, mas isso **não deveria estar lá**
 
 **APIs também duplicadas:**
 ```
@@ -56,14 +61,29 @@ diff app/dashboard/admin/page.tsx app/platform/page.tsx
 diff app/api/admin/stats/route.ts app/api/platform/stats/route.ts
 ```
 
-#### Passo 2: Migrar Funcionalidades Faltantes
+#### Passo 2: Verificar Escopo Correto e Remover Funcionalidades Incorretas
 
-Se `/dashboard/admin/page.tsx` tiver funcionalidades que `/platform/page.tsx` não tem (ex: aniversariantes), migrar:
+**Escopo da Plataforma (`/platform`):**
+- ✅ Gerenciar tenants (igrejas)
+- ✅ Gerenciar planos
+- ✅ Gerenciar módulos
+- ✅ Estatísticas da plataforma (total de igrejas, membros, planos)
 
-```typescript
-// Exemplo: Adicionar aniversariantes em /platform/page.tsx
-// Copiar código de app/dashboard/admin/page.tsx
-```
+**NÃO faz parte da plataforma:**
+- ❌ Aniversariantes (é funcionalidade do tenant admin - `/dashboard`)
+- ❌ Gestão de membros (é funcionalidade do tenant admin)
+- ❌ Finanças (é funcionalidade do tenant admin)
+- ❌ Qualquer funcionalidade específica de uma igreja
+
+**O que fazer:**
+1. Verificar se `/platform/page.tsx` tem apenas funcionalidades corretas da plataforma ✅
+2. Remover funcionalidades incorretas de `/dashboard/admin/page.tsx` (ex: aniversariantes)
+3. Aniversariantes já está correto em `/dashboard/page.tsx` (tenant admin) ✅
+4. Remover `/api/admin/birthdays/route.ts` (não é escopo da plataforma)
+
+**APIs que devem ser removidas:**
+- `/api/admin/birthdays/route.ts` → Não é escopo da plataforma
+- A API correta já existe: `/api/dashboard/birthdays/route.ts` (tenant admin)
 
 #### Passo 3: Atualizar Referências
 
