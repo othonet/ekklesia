@@ -138,7 +138,12 @@ jobs:
             if pm2 list | grep -q "ekklesia"; then
               pm2 restart ekklesia
             else
-              pm2 start npm --name "ekklesia" -- start
+              # Usar ecosystem.config.js se existir, senão usar npm start
+              if [ -f ecosystem.config.js ]; then
+                pm2 start ecosystem.config.js
+              else
+                pm2 start npm --name "ekklesia" -- start
+              fi
               pm2 save
             fi
             
