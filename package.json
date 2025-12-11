@@ -21,11 +21,12 @@
     "validate:env": "tsx scripts/validar-env.ts",
     "pre-commit": "tsx scripts/pre-commit-check.ts",
     "pre-deploy": "tsx scripts/pre-deploy-check.ts",
+    "validate": "tsx scripts/validate-all.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:all": "npm run lint && npm run type-check && npm run test && npm run build && npm run lgpd:test",
-    "ci": "npm run lint && npm run type-check && npm run test && npm run build && npm run lgpd:test"
+    "test:all": "npm run validate",
+    "ci": "npm run validate"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
