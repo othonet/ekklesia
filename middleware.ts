@@ -73,7 +73,21 @@ export async function middleware(request: NextRequest) {
     if (platformToken) {
       const payload = await verifyToken(platformToken)
       if (payload) {
-        return NextResponse.redirect(new URL('/platform', request.url))
+        // Verificar se é realmente platform admin antes de redirecionar
+        if (payload.isPlatformAdmin === true) {
+          return NextResponse.redirect(new URL('/platform', request.url))
+        } else {
+          // Se não tiver flag no token, verificar no banco
+          const { isPlatformAdmin } = await import('@/lib/platform-auth')
+          const isAdmin = await isPlatformAdmin(request)
+          if (isAdmin) {
+            return NextResponse.redirect(new URL('/platform', request.url))
+          }
+          // Se não for admin, limpar cookie e permitir login
+          const response = NextResponse.next()
+          response.cookies.delete('platform_token')
+          return response
+        }
       }
     }
   }
@@ -96,8 +110,10 @@ export async function middleware(request: NextRequest) {
     }
     
     // Verificar se é realmente platform admin (usar flag do JWT ou consultar banco)
+    // Se o token não tiver a flag isPlatformAdmin (tokens antigos), verificar no banco
     if (platformPayload.isPlatformAdmin !== true) {
-      // Se não tiver flag no JWT, verificar no banco usando função auxiliar
+      console.log('[PLATFORM] Token sem flag isPlatformAdmin, verificando no banco...', platformPayload.email)
+      // Verificar no banco usando função auxiliar
       const { isPlatformAdmin } = await import('@/lib/platform-auth')
       const isAdmin = await isPlatformAdmin(request)
       if (!isAdmin) {
@@ -107,6 +123,10 @@ export async function middleware(request: NextRequest) {
           { status: 403 }
         )
       }
+      // Se for admin no banco, permitir acesso (token será atualizado no próximo login)
+      console.log('[PLATFORM] Acesso permitido após verificação no banco', platformPayload.email)
+    } else {
+      console.log('[PLATFORM] Acesso permitido - isPlatformAdmin=true no token', platformPayload.email)
     }
   }
 

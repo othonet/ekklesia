@@ -9,10 +9,16 @@ export async function isPlatformAdmin(request: NextRequest): Promise<boolean> {
   try {
     // Usar platform_token para a plataforma
     const token = request.cookies.get('platform_token')?.value
-    if (!token) return false
+    if (!token) {
+      console.log('[PLATFORM-AUTH] Sem platform_token')
+      return false
+    }
 
     const payload = verifyToken(token)
-    if (!payload) return false
+    if (!payload) {
+      console.log('[PLATFORM-AUTH] Token inválido')
+      return false
+    }
 
     // Verificar se o usuário tem isPlatformAdmin = true no banco
     const { prisma } = await import('./prisma')
@@ -21,11 +27,28 @@ export async function isPlatformAdmin(request: NextRequest): Promise<boolean> {
       select: { isPlatformAdmin: true, active: true },
     })
 
-    if (!user || !user.active) return false
+    if (!user) {
+      console.log('[PLATFORM-AUTH] Usuário não encontrado:', payload.userId)
+      return false
+    }
+
+    if (!user.active) {
+      console.log('[PLATFORM-AUTH] Usuário inativo:', payload.userId)
+      return false
+    }
+
+    const isAdmin = user.isPlatformAdmin === true
+    console.log('[PLATFORM-AUTH] Verificação:', {
+      userId: payload.userId,
+      email: payload.email,
+      isPlatformAdmin: user.isPlatformAdmin,
+      result: isAdmin
+    })
 
     // Apenas usuários com isPlatformAdmin = true podem acessar
-    return user.isPlatformAdmin === true
-  } catch {
+    return isAdmin
+  } catch (error) {
+    console.error('[PLATFORM-AUTH] Erro ao verificar:', error)
     return false
   }
 }
