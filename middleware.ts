@@ -19,7 +19,7 @@ async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
     const secret = getJWTSecret()
     const { payload } = await jwtVerify(token, secret)
-    return payload as JWTPayload
+    return payload as unknown as JWTPayload
   } catch (error: any) {
     // Não logar erros de token expirado ou inválido repetidamente
     // Apenas logar se for um erro inesperado

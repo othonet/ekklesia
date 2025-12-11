@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken'
+import type { SignOptions } from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import { prisma } from './prisma'
 
@@ -30,9 +31,12 @@ export async function verifyPassword(
 }
 
 export function generateToken(payload: JWTPayload): string {
+  if (!JWT_SECRET) {
+    throw new Error('JWT_SECRET não configurado')
+  }
   return jwt.sign(payload, JWT_SECRET, {
     expiresIn: JWT_EXPIRES_IN,
-  })
+  } as SignOptions)
 }
 
 export function verifyToken(token: string): JWTPayload | null {
@@ -88,9 +92,12 @@ export async function authenticateUser(
 }
 
 export function generateMemberToken(payload: MemberJWTPayload): string {
+  if (!JWT_SECRET) {
+    throw new Error('JWT_SECRET não configurado')
+  }
   return jwt.sign(payload, JWT_SECRET, {
     expiresIn: JWT_EXPIRES_IN,
-  })
+  } as SignOptions)
 }
 
 export function verifyMemberToken(token: string): MemberJWTPayload | null {

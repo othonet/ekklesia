@@ -28,28 +28,6 @@ async function main() {
     { key: 'MOBILE_APP', name: 'App para Membros', description: 'Acesso ao aplicativo mobile para membros', icon: 'Smartphone', route: null, order: 13 },
   ]
 
-  // Adicionar módulo PASTORAL aos planos Master (se existir)
-  const masterPlan = await prisma.plan.findUnique({ where: { key: 'MASTER' } })
-  if (masterPlan) {
-    const pastoralModule = createdModules.find((m) => m.key === 'PASTORAL')
-    if (pastoralModule) {
-      await prisma.planModule.upsert({
-        where: {
-          planId_moduleId: {
-            planId: masterPlan.id,
-            moduleId: pastoralModule.id,
-          },
-        },
-        update: {},
-        create: {
-          planId: masterPlan.id,
-          moduleId: pastoralModule.id,
-        },
-      })
-      console.log('✅ Módulo PASTORAL adicionado ao plano Master')
-    }
-  }
-
   const createdModules = []
   for (const moduleData of modules) {
     const createdModule = await prisma.module.upsert({
@@ -146,6 +124,25 @@ async function main() {
     },
   })
   console.log('✅ Plano Master criado')
+
+  // Adicionar módulo PASTORAL aos planos Master (se existir)
+  const pastoralModule = createdModules.find((m) => m.key === 'PASTORAL')
+  if (pastoralModule) {
+    await prisma.planModule.upsert({
+      where: {
+        planId_moduleId: {
+          planId: masterPlan.id,
+          moduleId: pastoralModule.id,
+        },
+      },
+      update: {},
+      create: {
+        planId: masterPlan.id,
+        moduleId: pastoralModule.id,
+      },
+    })
+    console.log('✅ Módulo PASTORAL adicionado ao plano Master')
+  }
 
   // Criar igreja padrão com plano Master
   const church = await prisma.church.upsert({

@@ -101,7 +101,7 @@ export function createErrorResponse(
   return NextResponse.json(
     {
       error: message,
-      ...(details && { details }),
+      ...(details ? { details } : {}),
     },
     { status }
   )
