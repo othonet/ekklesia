@@ -1,6 +1,17 @@
 /**
  * Testes básicos para funções de autenticação
+ * 
+ * Nota: Estes testes requerem bcryptjs e podem precisar de mock do Prisma
  */
+
+// Mock do Prisma antes de importar auth
+jest.mock('@/lib/prisma', () => ({
+  prisma: {
+    user: {
+      findUnique: jest.fn(),
+    },
+  },
+}))
 
 import { hashPassword, verifyPassword } from '@/lib/auth'
 

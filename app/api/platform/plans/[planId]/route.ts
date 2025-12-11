@@ -120,6 +120,57 @@ export async function PUT(
   }
 }
 
+// Obter plano específico
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ planId: string }> | { planId: string } }
+) {
+  try {
+    if (!(await isPlatformAdmin(request))) {
+      return NextResponse.json(
+        { error: 'Acesso negado. Apenas administradores da plataforma.' },
+        { status: 403, headers: getCorsHeaders(request) }
+      )
+    }
+
+    const { planId } = await Promise.resolve(params)
+
+    const plan = await prisma.plan.findUnique({
+      where: { id: planId },
+      include: {
+        modules: {
+          include: {
+            module: true,
+          },
+        },
+        _count: {
+          select: {
+            churches: true,
+          },
+        },
+      },
+    })
+
+    if (!plan) {
+      return NextResponse.json(
+        { error: 'Plano não encontrado' },
+        { status: 404, headers: getCorsHeaders(request) }
+      )
+    }
+
+    return NextResponse.json(
+      { plan },
+      { headers: getCorsHeaders(request) }
+    )
+  } catch (error: any) {
+    console.error('Erro ao buscar plano:', error)
+    return NextResponse.json(
+      { error: error.message || 'Erro ao buscar plano' },
+      { status: 500, headers: getCorsHeaders(request) }
+    )
+  }
+}
+
 // Deletar plano
 export async function DELETE(
   request: NextRequest,

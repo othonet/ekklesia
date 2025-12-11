@@ -15,6 +15,7 @@ import { Loader2, Package, Edit, Trash2, Plus } from 'lucide-react'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { toast } from '@/hooks/use-toast'
 
 interface Module {
   id: string
@@ -182,16 +183,27 @@ export default function PlansPage() {
                     method: 'DELETE',
                   })
                   if (response.ok) {
-                    alert('Plano deletado com sucesso!')
+                    toast({
+                      title: 'Sucesso',
+                      description: 'Plano deletado com sucesso',
+                    })
                     setDeleteDialogOpen(false)
                     fetchPlans()
                   } else {
                     const data = await response.json()
-                    alert(data.error || 'Erro ao deletar plano')
+                    toast({
+                      title: 'Erro',
+                      description: data.error || 'Erro ao deletar plano',
+                      variant: 'destructive',
+                    })
                   }
                 } catch (error) {
                   console.error('Erro ao deletar plano:', error)
-                  alert('Erro ao deletar plano')
+                  toast({
+                    title: 'Erro',
+                    description: 'Erro ao deletar plano',
+                    variant: 'destructive',
+                  })
                 } finally {
                   setDeleting(false)
                 }

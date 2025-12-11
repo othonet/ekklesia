@@ -1,13 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Package } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from '@/hooks/use-toast'
 
@@ -18,24 +18,8 @@ interface Module {
   description: string | null
 }
 
-interface Plan {
-  id: string
-  key: string
-  name: string
-  description: string | null
-  price: number | null
-  active: boolean
-  modules: Array<{
-    module: Module
-  }>
-}
-
-export default function EditPlanPage() {
+export default function NewPlanPage() {
   const router = useRouter()
-  const params = useParams()
-  const planId = params.planId as string
-
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [modules, setModules] = useState<Module[]>([])
   const [formData, setFormData] = useState({
@@ -48,35 +32,8 @@ export default function EditPlanPage() {
   })
 
   useEffect(() => {
-    fetchPlan()
     fetchModules()
-  }, [planId])
-
-  async function fetchPlan() {
-    try {
-      const response = await fetch(`/api/platform/plans/${planId}`)
-      if (response.ok) {
-        const data = await response.json()
-        const plan = data.plan
-        if (plan) {
-          setFormData({
-            key: plan.key,
-            name: plan.name,
-            description: plan.description || '',
-            price: plan.price?.toString() || '',
-            active: plan.active,
-            moduleIds: plan.modules.map((pm: { module: { id: string } }) => pm.module.id),
-          })
-        }
-      } else {
-        console.error('Erro ao buscar plano:', response.statusText)
-      }
-    } catch (error) {
-      console.error('Erro ao buscar plano:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [])
 
   async function fetchModules() {
     try {
@@ -84,9 +41,20 @@ export default function EditPlanPage() {
       if (response.ok) {
         const data = await response.json()
         setModules(data.modules || [])
+      } else {
+        toast({
+          title: 'Erro',
+          description: 'Erro ao carregar módulos',
+          variant: 'destructive',
+        })
       }
     } catch (error) {
       console.error('Erro ao buscar módulos:', error)
+      toast({
+        title: 'Erro',
+        description: 'Erro ao carregar módulos',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -95,8 +63,8 @@ export default function EditPlanPage() {
     setSaving(true)
 
     try {
-      const response = await fetch(`/api/platform/plans/${planId}`, {
-        method: 'PUT',
+      const response = await fetch('/api/platform/plans', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -109,22 +77,22 @@ export default function EditPlanPage() {
       if (response.ok) {
         toast({
           title: 'Sucesso',
-          description: 'Plano atualizado com sucesso',
+          description: 'Plano criado com sucesso',
         })
         router.push('/platform/plans')
       } else {
         const data = await response.json()
         toast({
           title: 'Erro',
-          description: data.error || 'Erro ao atualizar plano',
+          description: data.error || 'Erro ao criar plano',
           variant: 'destructive',
         })
       }
     } catch (error) {
-      console.error('Erro ao atualizar plano:', error)
+      console.error('Erro ao criar plano:', error)
       toast({
         title: 'Erro',
-        description: 'Erro ao atualizar plano',
+        description: 'Erro ao criar plano',
         variant: 'destructive',
       })
     } finally {
@@ -141,36 +109,31 @@ export default function EditPlanPage() {
     }))
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    )
-  }
-
   return (
     <div className="container mx-auto py-8">
       <div className="mb-8">
         <Breadcrumb
           items={[
             { label: 'Planos', href: '/platform/plans' },
-            { label: 'Editar Plano' },
+            { label: 'Novo Plano' },
           ]}
           className="mb-4"
         />
-        <h1 className="text-3xl font-bold">Editar Plano</h1>
+        <h1 className="text-3xl font-bold">Novo Plano</h1>
         <p className="text-muted-foreground mt-2">
-          Edite os dados do plano
+          Crie um novo plano para as igrejas
         </p>
       </div>
 
       <form onSubmit={handleSubmit}>
         <Card>
           <CardHeader>
-            <CardTitle>Informações do Plano</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Informações do Plano
+            </CardTitle>
             <CardDescription>
-              Atualize os dados do plano
+              Preencha os dados para criar um novo plano
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -183,10 +146,13 @@ export default function EditPlanPage() {
                     required
                     value={formData.key}
                     onChange={(e) =>
-                      setFormData({ ...formData, key: e.target.value })
+                      setFormData({ ...formData, key: e.target.value.toUpperCase() })
                     }
                     placeholder="BASIC, INTERMEDIATE, MASTER"
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Chave única do plano (maiúsculas, sem espaços)
+                  </p>
                 </div>
                 <div>
                   <Label htmlFor="name">Nome *</Label>
@@ -197,6 +163,7 @@ export default function EditPlanPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, name: e.target.value })
                     }
+                    placeholder="Plano Básico"
                   />
                 </div>
                 <div className="md:col-span-2">
@@ -207,6 +174,7 @@ export default function EditPlanPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, description: e.target.value })
                     }
+                    placeholder="Descrição do plano"
                   />
                 </div>
                 <div>
@@ -215,6 +183,7 @@ export default function EditPlanPage() {
                     id="price"
                     type="number"
                     step="0.01"
+                    min="0"
                     value={formData.price}
                     onChange={(e) =>
                       setFormData({ ...formData, price: e.target.value })
@@ -238,6 +207,9 @@ export default function EditPlanPage() {
 
               <div>
                 <Label>Módulos Incluídos</Label>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Selecione os módulos que estarão disponíveis neste plano
+                </p>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
                   {modules.map((module) => (
                     <div key={module.id} className="flex items-center gap-2">
@@ -257,6 +229,14 @@ export default function EditPlanPage() {
                     </div>
                   ))}
                 </div>
+                {modules.length === 0 && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Nenhum módulo disponível. Crie módulos primeiro em{' '}
+                    <Link href="/platform/modules" className="text-primary hover:underline">
+                      Gerenciar Módulos
+                    </Link>
+                  </p>
+                )}
               </div>
 
               <div className="flex justify-end gap-2 mt-6">
@@ -265,9 +245,9 @@ export default function EditPlanPage() {
                     Cancelar
                   </Button>
                 </Link>
-                <Button type="submit" disabled={saving}>
+                <Button type="submit" disabled={saving || !formData.key || !formData.name}>
                   {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Salvar Alterações
+                  Criar Plano
                 </Button>
               </div>
             </div>
@@ -277,4 +257,3 @@ export default function EditPlanPage() {
     </div>
   )
 }
-
