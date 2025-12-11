@@ -10,6 +10,8 @@ module.exports = {
       exec_mode: 'fork',
       env: {
         NODE_ENV: 'production',
+        PORT: 3000,
+        HOSTNAME: '0.0.0.0',
       },
       error_file: '/root/ekklesia/logs/pm2-error.log',
       out_file: '/root/ekklesia/logs/pm2-out.log',
