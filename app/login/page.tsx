@@ -188,17 +188,11 @@ export default function LoginPage() {
                 <Button type="submit" className="w-full h-11" disabled={loading}>
                   {loading ? 'Entrando...' : 'Entrar'}
                 </Button>
-                <div className="text-center text-xs text-muted-foreground space-y-2">
+                <div className="text-center text-xs text-muted-foreground">
                   <p>
                     Ao entrar, você concorda com nossa{' '}
                     <a href="/privacy" target="_blank" className="text-primary hover:underline">
                       Política de Privacidade
-                    </a>
-                  </p>
-                  <p className="pt-2 border-t">
-                    É administrador da plataforma?{' '}
-                    <a href="/platform/login" className="text-primary hover:underline font-medium">
-                      Acesse aqui
                     </a>
                   </p>
                 </div>
