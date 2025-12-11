@@ -3,8 +3,12 @@ import type { SignOptions } from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import { prisma } from './prisma'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+const JWT_SECRET = process.env.JWT_SECRET
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d'
+
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET não configurado. Configure a variável de ambiente JWT_SECRET.')
+}
 
 export interface JWTPayload {
   userId: string
@@ -33,7 +37,7 @@ export async function verifyPassword(
 
 export function generateToken(payload: JWTPayload): string {
   if (!JWT_SECRET) {
-    throw new Error('JWT_SECRET não configurado')
+    throw new Error('JWT_SECRET não configurado. Configure a variável de ambiente JWT_SECRET.')
   }
   return jwt.sign(payload, JWT_SECRET, {
     expiresIn: JWT_EXPIRES_IN,
@@ -41,8 +45,12 @@ export function generateToken(payload: JWTPayload): string {
 }
 
 export function verifyToken(token: string): JWTPayload | null {
+  if (!JWT_SECRET) {
+    console.error('JWT_SECRET não configurado')
+    return null
+  }
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload
+    const decoded = jwt.verify(token, JWT_SECRET) as unknown as JWTPayload
     return decoded
   } catch (error: any) {
     console.error('Erro ao verificar token:', error.message)
@@ -95,7 +103,7 @@ export async function authenticateUser(
 
 export function generateMemberToken(payload: MemberJWTPayload): string {
   if (!JWT_SECRET) {
-    throw new Error('JWT_SECRET não configurado')
+    throw new Error('JWT_SECRET não configurado. Configure a variável de ambiente JWT_SECRET.')
   }
   return jwt.sign(payload, JWT_SECRET, {
     expiresIn: JWT_EXPIRES_IN,
@@ -103,8 +111,12 @@ export function generateMemberToken(payload: MemberJWTPayload): string {
 }
 
 export function verifyMemberToken(token: string): MemberJWTPayload | null {
+  if (!JWT_SECRET) {
+    console.error('JWT_SECRET não configurado')
+    return null
+  }
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as MemberJWTPayload
+    const decoded = jwt.verify(token, JWT_SECRET) as unknown as MemberJWTPayload
     return decoded
   } catch (error: any) {
     console.error('Erro ao verificar token de membro:', error.message)

@@ -18,7 +18,10 @@ export function encrypt(text: string): string {
 
   try {
     const crypto = require('crypto')
-    const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'default-key-change-in-production'
+    const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY
+    if (!ENCRYPTION_KEY) {
+      throw new Error('ENCRYPTION_KEY não configurado. Configure a variável de ambiente ENCRYPTION_KEY.')
+    }
     const ALGORITHM = 'aes-256-gcm'
 
     const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32)
@@ -45,7 +48,10 @@ export function decrypt(encryptedText: string): string {
 
   try {
     const crypto = require('crypto')
-    const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'default-key-change-in-production'
+    const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY
+    if (!ENCRYPTION_KEY) {
+      throw new Error('ENCRYPTION_KEY não configurado. Configure a variável de ambiente ENCRYPTION_KEY.')
+    }
     const ALGORITHM = 'aes-256-gcm'
 
     const parts = encryptedText.split(':')

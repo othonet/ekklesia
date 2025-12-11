@@ -4,7 +4,10 @@ import { jwtVerify } from 'jose'
 
 // Obter JWT_SECRET da variável de ambiente
 const getJWTSecret = () => {
-  const secret = process.env.JWT_SECRET || 'your-secret-key'
+  const secret = process.env.JWT_SECRET
+  if (!secret) {
+    throw new Error('JWT_SECRET não configurado. Configure a variável de ambiente JWT_SECRET.')
+  }
   return new TextEncoder().encode(secret)
 }
 
@@ -127,9 +130,27 @@ export async function middleware(request: NextRequest) {
     // Adicionar headers CORS para APIs (especialmente para app mobile)
     if (isApiAuth || isApiMembers || isApiPrivacy) {
       const response = NextResponse.next()
-      response.headers.set('Access-Control-Allow-Origin', '*')
+      
+      // CORS seguro: verificar origem permitida
+      const origin = request.headers.get('origin')
+      const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || []
+      const isProduction = process.env.NODE_ENV === 'production'
+      
+      // Em produção, verificar origem permitida
+      // Em desenvolvimento ou para app mobile, permitir todas (necessário para desenvolvimento local)
+      if (isProduction && allowedOrigins.length > 0) {
+        if (origin && allowedOrigins.includes(origin)) {
+          response.headers.set('Access-Control-Allow-Origin', origin)
+        }
+        // Se origem não permitida, não definir CORS (bloqueia requisição)
+      } else {
+        // Desenvolvimento: permitir todas as origens (necessário para app mobile e dev local)
+        response.headers.set('Access-Control-Allow-Origin', '*')
+      }
+      
       response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
       response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+      response.headers.set('Access-Control-Allow-Credentials', 'true')
       return response
     }
     return NextResponse.next()
