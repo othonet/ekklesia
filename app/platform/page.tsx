@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Church, Users, Package, TrendingUp, Plus } from 'lucide-react'
+import { Church, Users, Package, TrendingUp, Plus, Settings } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
@@ -118,7 +118,7 @@ export default function PlatformDashboardPage() {
           </div>
 
           {/* Ações Rápidas */}
-          <div className="grid gap-4 md:grid-cols-3 mb-8">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
             <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => router.push('/platform/tenants')}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -139,6 +139,18 @@ export default function PlatformDashboardPage() {
                 </CardTitle>
                 <CardDescription>
                   Configurar planos e módulos
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => router.push('/platform/modules')}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  Gerenciar Módulos
+                </CardTitle>
+                <CardDescription>
+                  Gerenciar todos os módulos do sistema
                 </CardDescription>
               </CardHeader>
             </Card>
