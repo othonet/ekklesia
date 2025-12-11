@@ -58,6 +58,18 @@ export function Sidebar() {
   const [mounted, setMounted] = useState(false)
   const [isLeader, setIsLeader] = useState(false)
   const { modules, loading: modulesLoading } = useChurchModules()
+  
+  // Debug: log dos módulos recebidos
+  useEffect(() => {
+    if (modules.length > 0 && process.env.NODE_ENV === 'development') {
+      console.log('Módulos recebidos pelo sidebar:', modules.map(m => ({
+        key: m.key,
+        name: m.name,
+        route: m.route,
+        active: m.active,
+      })))
+    }
+  }, [modules])
 
   useEffect(() => {
     setMounted(true)
@@ -113,10 +125,26 @@ export function Sidebar() {
         // Filtrar módulos baseado em permissões
         ...modules
           .filter((m) => {
-            // Verificar se o módulo está disponível no plano
-            if (!m.route || !moduleNavigationMap[m.key]) return false
+            // Verificar se o módulo tem rota definida e está no mapeamento
+            if (!m.route) {
+              console.warn(`Módulo ${m.key} não tem rota definida`)
+              return false
+            }
+            
+            if (!moduleNavigationMap[m.key]) {
+              console.warn(`Módulo ${m.key} não está no moduleNavigationMap`)
+              return false
+            }
+            
             // Verificar se o usuário tem permissão para acessar o módulo
-            return hasModuleAccess(userRole, m.key.toLowerCase())
+            const moduleKeyLower = m.key.toLowerCase()
+            const hasAccess = hasModuleAccess(userRole, moduleKeyLower)
+            
+            if (!hasAccess) {
+              console.debug(`Usuário com role ${userRole} não tem acesso ao módulo ${m.key}`)
+            }
+            
+            return hasAccess
           })
           .map((m) => ({
             ...moduleNavigationMap[m.key],

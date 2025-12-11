@@ -178,6 +178,7 @@ export function hasModuleAccess(role: string, module: string): boolean {
     budgets: ['budgets:read'],
     ministries: ['ministries:read'],
     transparency: ['transparency:read'],
+    pastoral: ['members:read'], // Acompanhamento pastoral usa permissão de membros
   }
 
   const requiredPermissions = modulePermissions[module] || []
