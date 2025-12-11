@@ -16,7 +16,19 @@ async function main() {
     // Deletar todos os dados na ordem correta (respeitando foreign keys)
     console.log('📋 Deletando dados...')
 
-    // 1. Deletar dados relacionados a membros primeiro
+    // 1. Deletar dados relacionados a membros primeiro (ordem respeitando foreign keys)
+    await prisma.certificateValidation.deleteMany({})
+    console.log('✅ Validações de certificados deletadas')
+
+    await prisma.certificate.deleteMany({})
+    console.log('✅ Certificados deletados')
+
+    await prisma.memberCourse.deleteMany({})
+    console.log('✅ Inscrições em cursos deletadas')
+
+    await prisma.course.deleteMany({})
+    console.log('✅ Cursos deletados')
+
     await prisma.attendance.deleteMany({})
     console.log('✅ Atendimentos deletados')
 
@@ -26,14 +38,8 @@ async function main() {
     await prisma.discipleship.deleteMany({})
     console.log('✅ Discipulados deletados')
 
-    await prisma.certificate.deleteMany({})
-    console.log('✅ Certificados deletados')
-
-    await prisma.courseEnrollment.deleteMany({})
-    console.log('✅ Inscrições em cursos deletadas')
-
-    await prisma.course.deleteMany({})
-    console.log('✅ Cursos deletados')
+    await prisma.memberMinistry.deleteMany({})
+    console.log('✅ Relações membro-ministério deletadas')
 
     await prisma.memberNeed.deleteMany({})
     console.log('✅ Necessidades de membros deletadas')
@@ -46,6 +52,9 @@ async function main() {
 
     await prisma.faithDecision.deleteMany({})
     console.log('✅ Decisões de fé deletadas')
+
+    await prisma.memberConsent.deleteMany({})
+    console.log('✅ Consentimentos de membros deletados')
 
     // 2. Deletar dados financeiros
     await prisma.budget.deleteMany({})
@@ -106,7 +115,7 @@ async function main() {
     console.log('✅ Logs de auditoria deletados')
 
     // 11. Deletar solicitações LGPD
-    await prisma.privacyRequest.deleteMany({})
+    await prisma.dataRequest.deleteMany({})
     console.log('✅ Solicitações LGPD deletadas')
 
     console.log('\n✅ Todos os dados foram deletados!\n')
