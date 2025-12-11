@@ -31,7 +31,7 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     needs: lint
-    if: always() && (needs.lint.result == 'success' || needs.lint.result == 'failure')
+    if: needs.lint.result == 'success'
     
     steps:
       - name: Checkout código
@@ -119,72 +119,58 @@ jobs:
           echo "  Testes LGPD: ${{ needs.test-lgpd.result }}"
           echo "  Type Check: ${{ needs.type-check.result }}"
           
-          # Contar falhas e tarefas ignoradas
+          # Contar falhas
           FAILED=0
-          SKIPPED=0
           
+          # Lint é obrigatório - se falhar, CI deve falhar
           if [ "${{ needs.lint.result }}" != "success" ]; then
-            if [ "${{ needs.lint.result }}" == "skipped" ]; then
-              SKIPPED=$((SKIPPED + 1))
-              echo "⚠️  Lint foi ignorado"
-            else
-              FAILED=$((FAILED + 1))
-              echo "❌ Lint falhou"
-            fi
+            FAILED=$((FAILED + 1))
+            echo "❌ Lint falhou - CI deve falhar"
           fi
           
-          if [ "${{ needs.build.result }}" != "success" ]; then
-            # Se build foi ignorado porque lint falhou, isso é comportamento esperado
-            if [ "${{ needs.build.result }}" == "skipped" ] && [ "${{ needs.lint.result }}" == "failure" ]; then
-              echo "ℹ️  Build foi ignorado porque Lint falhou (comportamento esperado)"
-              # Não contar como erro ou skip
-            elif [ "${{ needs.build.result }}" == "skipped" ]; then
-              SKIPPED=$((SKIPPED + 1))
-              echo "⚠️  Build foi ignorado"
-            else
-              FAILED=$((FAILED + 1))
-              echo "❌ Build falhou"
-            fi
+          # Build só executa se lint passar, então se build falhou, é um problema real
+          if [ "${{ needs.build.result }}" == "failure" ]; then
+            FAILED=$((FAILED + 1))
+            echo "❌ Build falhou"
+          elif [ "${{ needs.build.result }}" == "skipped" ] && [ "${{ needs.lint.result }}" == "failure" ]; then
+            echo "ℹ️  Build foi ignorado porque Lint falhou (comportamento esperado)"
+            # Não contar como erro adicional, já que lint já foi contado
           fi
           
+          # Testes LGPD são obrigatórios
           if [ "${{ needs.test-lgpd.result }}" != "success" ]; then
-            if [ "${{ needs.test-lgpd.result }}" == "skipped" ]; then
-              SKIPPED=$((SKIPPED + 1))
-              echo "⚠️  Testes LGPD foram ignorados"
-            else
-              FAILED=$((FAILED + 1))
-              echo "❌ Testes LGPD falharam"
-            fi
+            FAILED=$((FAILED + 1))
+            echo "❌ Testes LGPD falharam"
           fi
           
+          # Type Check é obrigatório
           if [ "${{ needs.type-check.result }}" != "success" ]; then
-            if [ "${{ needs.type-check.result }}" == "skipped" ]; then
-              SKIPPED=$((SKIPPED + 1))
-              echo "⚠️  Type Check foi ignorado"
-            else
-              FAILED=$((FAILED + 1))
-              echo "❌ Type Check falhou"
-            fi
+            FAILED=$((FAILED + 1))
+            echo "❌ Type Check falhou"
           fi
           
           # Resumo final
           echo ""
           echo "📋 Resumo:"
-          echo "  ✅ Sucessos: $((4 - FAILED - SKIPPED))"
+          SUCCESS_COUNT=0
+          [ "${{ needs.lint.result }}" == "success" ] && SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+          [ "${{ needs.build.result }}" == "success" ] && SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+          [ "${{ needs.test-lgpd.result }}" == "success" ] && SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+          [ "${{ needs.type-check.result }}" == "success" ] && SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+          
+          echo "  ✅ Sucessos: $SUCCESS_COUNT/4"
           if [ $FAILED -gt 0 ]; then
             echo "  ❌ Falhas: $FAILED"
           fi
-          if [ $SKIPPED -gt 0 ]; then
-            echo "  ⚠️  Ignorados: $SKIPPED"
-          fi
           
-          # Falhar apenas se houver falhas reais
+          # CI deve falhar se houver qualquer falha
           if [ $FAILED -gt 0 ]; then
             echo ""
             echo "❌ CI falhou: $FAILED check(s) falharam"
+            echo "💡 Corrija os erros antes de fazer merge/deploy"
             exit 1
           else
             echo ""
-            echo "🎉 CI passou com sucesso!"
+            echo "🎉 Todos os checks passaram! CI aprovado."
           fi
 
