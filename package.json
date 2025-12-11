@@ -12,6 +12,7 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed:reset": "tsx prisma/seed-reset.ts",
     "generate:encryption-key": "node scripts/generate-encryption-key.js",
     "delete:old-donations": "node scripts/delete-old-donations.js",
     "lgpd:migrate": "node scripts/migrate-encrypt-existing-data.js",
