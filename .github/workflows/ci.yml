@@ -104,10 +104,40 @@ jobs:
       - name: Verificar tipos TypeScript
         run: npx tsc --noEmit
 
+  test:
+    name: Testes Unitários
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Gerar cliente Prisma
+        run: npm run db:generate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL || 'mysql://user:password@localhost:3306/ekklesia' }}
+
+      - name: Executar testes
+        run: npm test
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET || 'test-secret-key-for-ci' }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY || '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef' }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL || 'mysql://user:password@localhost:3306/ekklesia_test' }}
+          NODE_ENV: test
+
   all-checks:
     name: Resumo
     runs-on: ubuntu-latest
-    needs: [lint, build, test-lgpd, type-check]
+    needs: [lint, build, test-lgpd, type-check, test]
     if: always()
     
     steps:
@@ -118,6 +148,7 @@ jobs:
           echo "  Build: ${{ needs.build.result }}"
           echo "  Testes LGPD: ${{ needs.test-lgpd.result }}"
           echo "  Type Check: ${{ needs.type-check.result }}"
+          echo "  Testes Unitários: ${{ needs.test.result }}"
           
           # Contar falhas
           FAILED=0
@@ -149,6 +180,12 @@ jobs:
             echo "❌ Type Check falhou"
           fi
           
+          # Testes Unitários são obrigatórios
+          if [ "${{ needs.test.result }}" != "success" ]; then
+            FAILED=$((FAILED + 1))
+            echo "❌ Testes Unitários falharam"
+          fi
+          
           # Resumo final
           echo ""
           echo "📋 Resumo:"
@@ -157,8 +194,9 @@ jobs:
           [ "${{ needs.build.result }}" == "success" ] && SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
           [ "${{ needs.test-lgpd.result }}" == "success" ] && SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
           [ "${{ needs.type-check.result }}" == "success" ] && SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+          [ "${{ needs.test.result }}" == "success" ] && SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
           
-          echo "  ✅ Sucessos: $SUCCESS_COUNT/4"
+          echo "  ✅ Sucessos: $SUCCESS_COUNT/5"
           if [ $FAILED -gt 0 ]; then
             echo "  ❌ Falhas: $FAILED"
           fi
