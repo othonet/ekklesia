@@ -103,6 +103,7 @@ export function Sidebar() {
   // Verificar permissões do usuário
   const userRole = user?.role || 'MEMBER'
   const hasDashboardAccess = canAccessRoute(userRole, '/dashboard')
+  const isPlatformAdmin = user?.isPlatformAdmin === true
   
   // Construir navegação baseada nas permissões do usuário e módulos disponíveis
   const navigationToShow = hasDashboardAccess
@@ -139,6 +140,27 @@ export function Sidebar() {
         </div>
       </div>
       <nav className="flex-1 space-y-6 overflow-y-auto p-4">
+        {/* Seção Plataforma Multitenancy - Apenas para platform admins */}
+        {isPlatformAdmin && (
+          <div className="space-y-1">
+            <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Plataforma
+            </div>
+            <Link
+              href="/platform"
+              className={cn(
+                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                pathname.startsWith('/platform')
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+              )}
+            >
+              <Shield className="h-5 w-5" />
+              Gerenciar Plataforma
+            </Link>
+          </div>
+        )}
+
         {/* Seção Liderança - Apenas para líderes de ministérios */}
         {hasDashboardAccess && isLeader && (
           <div className="space-y-1">

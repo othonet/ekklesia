@@ -7,6 +7,7 @@ export interface UserInfo {
   email: string
   role: string
   churchId?: string
+  isPlatformAdmin?: boolean
 }
 
 /**
@@ -44,6 +45,7 @@ export function getUserFromToken(): UserInfo | null {
       email: payload.email,
       role: payload.role,
       churchId: payload.churchId,
+      isPlatformAdmin: payload.isPlatformAdmin || false,
     }
   } catch (error) {
     console.error('Erro ao decodificar token:', error)

@@ -11,6 +11,7 @@ export interface JWTPayload {
   email: string
   role: string
   churchId?: string
+  isPlatformAdmin?: boolean
 }
 
 export interface MemberJWTPayload {
@@ -74,6 +75,7 @@ export async function authenticateUser(
       email: user.email,
       role: user.role,
       churchId: user.churchId || undefined,
+      isPlatformAdmin: user.isPlatformAdmin || false,
     })
 
     const { password: _, ...userWithoutPassword } = user

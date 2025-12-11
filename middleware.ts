@@ -13,6 +13,7 @@ interface JWTPayload {
   email: string
   role: string
   churchId?: string
+  isPlatformAdmin?: boolean
 }
 
 async function verifyToken(token: string): Promise<JWTPayload | null> {
@@ -76,17 +77,41 @@ export async function middleware(request: NextRequest) {
 
   // Bloquear acesso à plataforma se não tiver platform_token
   if (isPlatformRoute || isApiPlatform) {
-    if (!request.cookies.get('platform_token')) {
-      console.log('Middleware: Acesso negado à plataforma - sem platform_token')
-      // Redirecionar para login da plataforma
+    const platformToken = request.cookies.get('platform_token')?.value
+    if (!platformToken) {
+      console.log('[PLATFORM] Acesso negado - sem platform_token')
       return NextResponse.redirect(new URL('/platform/login', request.url))
+    }
+    
+    // Verificar token e isPlatformAdmin
+    const platformPayload = await verifyToken(platformToken)
+    if (!platformPayload) {
+      console.log('[PLATFORM] Token inválido')
+      const response = NextResponse.redirect(new URL('/platform/login', request.url))
+      response.cookies.delete('platform_token')
+      return response
+    }
+    
+    // Verificar se é realmente platform admin (usar flag do JWT ou consultar banco)
+    if (platformPayload.isPlatformAdmin !== true) {
+      // Se não tiver flag no JWT, verificar no banco usando função auxiliar
+      const { isPlatformAdmin } = await import('@/lib/platform-auth')
+      const isAdmin = await isPlatformAdmin(request)
+      if (!isAdmin) {
+        console.log('[PLATFORM] Acesso negado - não é platform admin', platformPayload.email)
+        return NextResponse.json(
+          { error: 'Acesso negado. Apenas administradores da plataforma.' },
+          { status: 403 }
+        )
+      }
     }
   }
 
   // Bloquear acesso ao dashboard se não tiver church_token
   if (isDashboardRoute || isApiDashboard) {
-    if (!request.cookies.get('church_token')) {
-      console.log('Middleware: Acesso negado ao dashboard - sem church_token')
+    const churchToken = request.cookies.get('church_token')?.value
+    if (!churchToken) {
+      console.log('[TENANT] Acesso negado ao dashboard - sem church_token')
       return NextResponse.redirect(new URL('/login', request.url))
     }
   }
@@ -112,16 +137,20 @@ export async function middleware(request: NextRequest) {
 
   // Verificar token para rotas protegidas
   if (!token) {
-    console.log('Middleware: Token não encontrado para', request.nextUrl.pathname, 'Cookie:', cookieName)
-    return NextResponse.redirect(new URL('/login', request.url))
+    const layer = isPlatformRoute || isApiPlatform ? '[PLATFORM]' : isDashboardRoute || isApiDashboard ? '[TENANT]' : '[UNKNOWN]'
+    console.log(`${layer} Token não encontrado para ${request.nextUrl.pathname} - Cookie: ${cookieName}`)
+    const redirectUrl = (isPlatformRoute || isApiPlatform) ? '/platform/login' : '/login'
+    return NextResponse.redirect(new URL(redirectUrl, request.url))
   }
 
   const payload = await verifyToken(token)
   
   if (!payload) {
-    console.log('Middleware: Token inválido para', request.nextUrl.pathname)
+    const layer = isPlatformRoute || isApiPlatform ? '[PLATFORM]' : isDashboardRoute || isApiDashboard ? '[TENANT]' : '[UNKNOWN]'
+    console.log(`${layer} Token inválido para ${request.nextUrl.pathname}`)
     // Limpar cookie inválido
-    const response = NextResponse.redirect(new URL('/login', request.url))
+    const redirectUrl = (isPlatformRoute || isApiPlatform) ? '/platform/login' : '/login'
+    const response = NextResponse.redirect(new URL(redirectUrl, request.url))
     response.cookies.delete(cookieName)
     return response
   }
@@ -134,12 +163,30 @@ export async function middleware(request: NextRequest) {
   if (isDashboardRoute) {
     const allowedRoles = ['ADMIN', 'PASTOR_PRESIDENTE', 'SECRETARIO', 'TESOUREIRO', 'PASTOR', 'LEADER']
     if (!allowedRoles.includes(payload.role)) {
-      console.log('Middleware: Acesso negado - role não permitido', payload.role)
+      console.log('[TENANT] Acesso negado - role não permitido', payload.role)
       return NextResponse.redirect(new URL('/login', request.url))
     }
   }
 
-  console.log('Middleware: Token válido para', request.nextUrl.pathname, 'Usuário:', payload.email, 'Role:', payload.role, 'Cookie:', cookieName)
+  // Logs estruturados por camada
+  if (isPlatformRoute || isApiPlatform) {
+    console.log('[PLATFORM]', {
+      path: request.nextUrl.pathname,
+      user: payload.email,
+      role: payload.role,
+      isPlatformAdmin: payload.isPlatformAdmin,
+      timestamp: new Date().toISOString()
+    })
+  } else if (isDashboardRoute || isApiDashboard) {
+    console.log('[TENANT]', {
+      path: request.nextUrl.pathname,
+      user: payload.email,
+      role: payload.role,
+      churchId: payload.churchId,
+      timestamp: new Date().toISOString()
+    })
+  }
+  
   return NextResponse.next()
 }
 
