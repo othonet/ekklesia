@@ -29,7 +29,7 @@ function runCommand(command: string, description: string, env?: Record<string, s
     execSync(command, { 
       stdio: 'inherit', 
       encoding: 'utf-8',
-      env: { ...process.env, ...env }
+      env: env ? { ...process.env, ...env } : process.env
     })
     
     log(`\n✅ ${description} passou`, 'green')
@@ -55,20 +55,27 @@ async function main() {
     NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'http://localhost:3000',
   }
 
-  const checks = [
+  interface Check {
+    command: string
+    description: string
+    required: boolean
+    env?: Record<string, string>
+  }
+
+  const checks: Check[] = [
     {
       command: 'npm run lint',
-      description: '1/5 - Lint (ESLint)',
+      description: '1/6 - Lint (ESLint)',
       required: true,
     },
     {
       command: 'npx tsc --noEmit',
-      description: '2/5 - Type Check (TypeScript)',
+      description: '2/6 - Type Check (TypeScript)',
       required: true,
     },
     {
       command: 'npm test',
-      description: '3/5 - Testes Unitários',
+      description: '3/6 - Testes Unitários',
       required: true,
       env: {
         JWT_SECRET: buildEnv.JWT_SECRET,
@@ -79,7 +86,7 @@ async function main() {
     },
     {
       command: 'npm run db:generate',
-      description: '4/5 - Gerar cliente Prisma',
+      description: '4/6 - Gerar cliente Prisma',
       required: true,
       env: {
         DATABASE_URL: buildEnv.DATABASE_URL,
@@ -87,7 +94,7 @@ async function main() {
     },
     {
       command: 'npm run build',
-      description: '5/5 - Build da aplicação',
+      description: '5/6 - Build da aplicação',
       required: true,
       env: buildEnv,
     },

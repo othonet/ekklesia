@@ -101,6 +101,11 @@ jobs:
       - name: Instalar dependências
         run: npm ci
 
+      - name: Gerar cliente Prisma
+        run: npm run db:generate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL || 'mysql://user:password@localhost:3306/ekklesia' }}
+
       - name: Verificar tipos TypeScript
         run: npx tsc --noEmit
 
