@@ -9,8 +9,9 @@ O workflow de deploy foi ajustado para **preservar variáveis de ambiente existe
 ## 🔄 Estratégia de Merge
 
 ### 1. **Variáveis dos GitHub Secrets**
-- ✅ Sempre atualizadas do GitHub Secrets
-- ✅ Sobrescrevem valores antigos se mudarem
+- ✅ **Apenas lidas** do GitHub Secrets (secrets nunca são modificados)
+- ✅ Valores são usados para atualizar `.env.production` na VPS
+- ✅ Sobrescrevem valores antigos no arquivo da VPS se mudarem nos secrets
 - ✅ Garantem consistência entre GitHub e VPS
 
 ### 2. **Variáveis Customizadas na VPS**
