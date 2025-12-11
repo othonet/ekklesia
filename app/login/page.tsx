@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,6 +15,20 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [isReturningUser, setIsReturningUser] = useState(false)
+
+  useEffect(() => {
+    // Verificar se o usuário já visitou a página de login antes
+    const hasVisitedBefore = localStorage.getItem('hasVisitedLogin')
+    
+    if (hasVisitedBefore) {
+      setIsReturningUser(true)
+    } else {
+      // Marcar que visitou pela primeira vez
+      localStorage.setItem('hasVisitedLogin', 'true')
+      setIsReturningUser(false)
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -149,7 +163,7 @@ export default function LoginPage() {
           <Card className="border-2">
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl font-bold text-center">
-                Bem-vindo de volta
+                {isReturningUser ? 'Bem-vindo de volta' : 'Bem-vindo'}
               </CardTitle>
               <CardDescription className="text-center">
                 Entre com suas credenciais para acessar o sistema
