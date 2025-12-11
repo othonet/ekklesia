@@ -1,0 +1,71 @@
+# 🔍 COMANDOS PARA DIAGNÓSTICO NA VPS
+# Execute estes comandos via SSH na VPS
+
+# ============================================
+# 1. VERIFICAR STATUS DO PM2
+# ============================================
+pm2 status
+pm2 logs ekklesia --lines 50
+
+# ============================================
+# 2. TESTAR APLICAÇÃO LOCALMENTE
+# ============================================
+curl http://localhost:3000
+curl -I http://localhost:3000
+
+# ============================================
+# 3. VERIFICAR NGINX
+# ============================================
+sudo systemctl status nginx
+sudo nginx -t
+sudo tail -20 /var/log/nginx/error.log
+
+# ============================================
+# 4. VERIFICAR PORTA 3000
+# ============================================
+sudo netstat -tlnp | grep 3000
+# ou
+sudo ss -tlnp | grep 3000
+
+# ============================================
+# 5. IR PARA DIRETÓRIO DA APLICAÇÃO
+# ============================================
+cd /root/ekklesia
+# ou o caminho configurado em VPS_DEPLOY_PATH
+
+# ============================================
+# 6. VERIFICAR BUILD
+# ============================================
+ls -la .next/
+ls -la .next/server/
+
+# ============================================
+# 7. VERIFICAR VARIÁVEIS DE AMBIENTE
+# ============================================
+cat .env.production | grep -E "APP_URL|NEXTAUTH_URL|DATABASE_URL"
+cat .env | head -5
+
+# ============================================
+# 8. REINICIAR APLICAÇÃO (SE NECESSÁRIO)
+# ============================================
+pm2 restart ekklesia
+pm2 logs ekklesia --lines 50
+
+# ============================================
+# 9. RE-DEPLOY COMPLETO (SE NADA FUNCIONAR)
+# ============================================
+cd /root/ekklesia
+cp .env.production .env
+npm ci
+npx prisma generate
+npm run build
+pm2 delete ekklesia
+pm2 start ecosystem.config.js
+pm2 save
+pm2 logs ekklesia
+
+# ============================================
+# 10. EXECUTAR SCRIPT DE DIAGNÓSTICO
+# ============================================
+cd /root/ekklesia
+./scripts/vps/diagnosticar-vps.sh
