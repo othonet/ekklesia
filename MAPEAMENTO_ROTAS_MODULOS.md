@@ -26,7 +26,8 @@ Este documento lista todas as rotas do sistema e seus módulos correspondentes.
 ## 📦 Módulos e suas Rotas
 
 ### MEMBERS - Gerenciamento de Membros
-**Descrição:** Gerenciamento de membros (CRUD básico)
+**Descrição:** Gerenciamento de membros (CRUD básico)  
+**Ícone:** `Users` (lucide-react)
 
 | Rota | Descrição | Requer Auth |
 |------|-----------|-------------|
@@ -48,7 +49,8 @@ Este documento lista todas as rotas do sistema e seus módulos correspondentes.
 ---
 
 ### FINANCES - Gerenciamento de Finanças
-**Descrição:** Gerenciamento de finanças (Dízimos e ofertas)
+**Descrição:** Gerenciamento de finanças (Dízimos e ofertas)  
+**Ícone:** `DollarSign` (lucide-react)
 
 | Rota | Descrição | Requer Auth |
 |------|-----------|-------------|
@@ -72,7 +74,8 @@ Este documento lista todas as rotas do sistema e seus módulos correspondentes.
 ---
 
 ### BUDGETS - Orçamentos
-**Descrição:** Gerenciamento de orçamentos
+**Descrição:** Gerenciamento de orçamentos  
+**Ícone:** `Target` (lucide-react)
 
 | Rota | Descrição | Requer Auth |
 |------|-----------|-------------|
@@ -99,7 +102,8 @@ Este documento lista todas as rotas do sistema e seus módulos correspondentes.
 ---
 
 ### ASSETS - Gerenciamento de Patrimônio
-**Descrição:** Gerenciamento de patrimônio
+**Descrição:** Gerenciamento de patrimônio  
+**Ícone:** `Package` (lucide-react)
 
 | Rota | Descrição | Requer Auth |
 |------|-----------|-------------|
@@ -127,7 +131,8 @@ Este documento lista todas as rotas do sistema e seus módulos correspondentes.
 ---
 
 ### COURSES - Gerenciamento de Cursos
-**Descrição:** Gerenciamento de cursos
+**Descrição:** Gerenciamento de cursos  
+**Ícone:** `BookOpen` (lucide-react)
 
 | Rota | Descrição | Requer Auth |
 |------|-----------|-------------|
@@ -155,7 +160,8 @@ Este documento lista todas as rotas do sistema e seus módulos correspondentes.
 ---
 
 ### ANALYTICS - Analytics e Métricas
-**Descrição:** Análises e métricas do sistema
+**Descrição:** Análises e métricas do sistema  
+**Ícone:** `BarChart3` (lucide-react)
 
 | Rota | Descrição | Requer Auth |
 |------|-----------|-------------|
@@ -180,7 +186,8 @@ Este documento lista todas as rotas do sistema e seus módulos correspondentes.
 ---
 
 ### PASTORAL - Acompanhamento Pastoral
-**Descrição:** Acompanhamento Pastoral
+**Descrição:** Acompanhamento Pastoral  
+**Ícone:** `Heart` (lucide-react)
 
 | Rota | Descrição | Requer Auth |
 |------|-----------|-------------|
@@ -193,10 +200,51 @@ Este documento lista todas as rotas do sistema e seus módulos correspondentes.
 
 Estas rotas estão sempre disponíveis (não requerem módulo):
 
-| Rota | Descrição | Requer Auth |
-|------|-----------|-------------|
-| `/dashboard` | Dashboard principal | ✅ |
-| `/dashboard/leadership` | Área de liderança (para líderes de ministérios) | ✅ |
+| Rota | Descrição | Ícone | Requer Auth |
+|------|-----------|-------|-------------|
+| `/dashboard` | Dashboard principal | `LayoutDashboard` | ✅ |
+| `/dashboard/leadership` | Área de liderança (para líderes de ministérios) | `UserCheck` | ✅ |
+
+---
+
+## 🎨 Ícones dos Módulos
+
+Todos os ícones são do pacote `lucide-react`. Aqui está a lista completa:
+
+| Módulo | Ícone | Import |
+|--------|-------|--------|
+| MEMBERS | `Users` | `import { Users } from 'lucide-react'` |
+| FINANCES | `DollarSign` | `import { DollarSign } from 'lucide-react'` |
+| MINISTRIES | `Building2` | `import { Building2 } from 'lucide-react'` |
+| ASSETS | `Package` | `import { Package } from 'lucide-react'` |
+| EVENTS | `Calendar` | `import { Calendar } from 'lucide-react'` |
+| COURSES | `BookOpen` | `import { BookOpen } from 'lucide-react'` |
+| CERTIFICATES | `Award` | `import { Award } from 'lucide-react'` |
+| ANALYTICS | `BarChart3` | `import { BarChart3 } from 'lucide-react'` |
+| REPORTS | `BarChart3` | `import { BarChart3 } from 'lucide-react'` |
+| BUDGETS | `Target` | `import { Target } from 'lucide-react'` |
+| TRANSPARENCY | `Eye` | `import { Eye } from 'lucide-react'` |
+| PASTORAL | `Heart` | `import { Heart } from 'lucide-react'` |
+| DASHBOARD | `LayoutDashboard` | `import { LayoutDashboard } from 'lucide-react'` |
+| LEADERSHIP | `UserCheck` | `import { UserCheck } from 'lucide-react'` |
+| MOBILE_APP | `Smartphone` | `import { Smartphone } from 'lucide-react'` |
+
+### Como usar programaticamente:
+
+```typescript
+import { getModuleIcon, MODULE_ICONS } from '@/lib/route-module-mapping'
+import * as Icons from 'lucide-react'
+
+// Obter ícone de um módulo
+const iconName = getModuleIcon('MEMBERS') // Retorna 'Users'
+
+// Usar o ícone
+const IconComponent = Icons[iconName as keyof typeof Icons]
+<IconComponent className="h-5 w-5" />
+
+// Ou acessar diretamente
+const iconName = MODULE_ICONS['MEMBERS'] // Retorna 'Users'
+```
 
 ---
 
