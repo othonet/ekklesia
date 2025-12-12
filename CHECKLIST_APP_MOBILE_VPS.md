@@ -82,7 +82,7 @@ As seguintes APIs devem estar funcionando:
 **Testar APIs:**
 ```bash
 # Testar login (deve retornar erro se igreja não tiver MOBILE_APP)
-curl -X POST https://seu-dominio.com/api/auth/member/login \
+curl -X POST https://enord.app/api/auth/member/login \
   -H "Content-Type: application/json" \
   -d '{"email":"membro@exemplo.com","password":"senha"}'
 
@@ -146,9 +146,7 @@ static const String baseUrl = 'http://192.168.1.100:3000'; // IP local
 
 **Depois (produção):**
 ```dart
-static const String baseUrl = 'https://api.ekklesia.com.br';
-// OU
-static const String baseUrl = 'https://seu-dominio.com';
+static const String baseUrl = 'https://enord.app';
 ```
 
 ### 2. **Configurar Segurança de Rede (Android)**
@@ -166,9 +164,9 @@ static const String baseUrl = 'https://seu-dominio.com';
         </trust-anchors>
     </base-config>
     
-    <!-- Permitir seu domínio -->
+    <!-- Permitir domínio de produção -->
     <domain-config cleartextTrafficPermitted="false">
-        <domain includeSubdomains="true">api.ekklesia.com.br</domain>
+        <domain includeSubdomains="true">enord.app</domain>
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>
@@ -215,7 +213,7 @@ mysql -u usuario -p nome_do_banco -e "SELECT * FROM modules WHERE key = 'MOBILE_
 # Deve mostrar "App para Membros" como ativo
 
 # 3. APIs respondem?
-curl -X POST https://seu-dominio.com/api/auth/member/login \
+curl -X POST https://enord.app/api/auth/member/login \
   -H "Content-Type: application/json" \
   -d '{"email":"teste@teste.com","password":"teste"}'
 
@@ -298,7 +296,7 @@ npm run db:seed  # Cria módulos se não existirem
 npx prisma studio  # Abre interface web
 
 # ✅ 3. Verificar se APIs estão funcionando
-curl -X POST https://seu-dominio.com/api/auth/member/login \
+curl -X POST https://enord.app/api/auth/member/login \
   -H "Content-Type: application/json" \
   -d '{"email":"teste","password":"teste"}'
 
@@ -310,8 +308,8 @@ No app mobile:
 
 ```bash
 # ✅ 1. Atualizar URL da API
-# Editar: mobile/lib/config/api_config.dart
-# Mudar para: https://seu-dominio.com
+# Editar: mobile/lib/services/config_service.dart
+# Já configurado para: https://enord.app
 
 # ✅ 2. Rebuild do app
 cd mobile
@@ -339,12 +337,12 @@ flutter build apk --release
 
 3. **Verificar se APIs estão funcionando**:
    ```bash
-   curl https://seu-dominio.com/api/auth/member/login
+   curl https://enord.app/api/auth/member/login
    ```
 
 ### No App Mobile:
 
-1. **Atualizar URL da API** para `https://seu-dominio.com`
+1. **Atualizar URL da API** para `https://enord.app` (já configurado)
 
 2. **Rebuild do app**:
    ```bash

@@ -10,12 +10,11 @@ class ConfigService {
   /// Retorna a URL padrão baseada na plataforma
   static String get _defaultApiUrl {
     if (kIsWeb) {
-      // APENAS para Chrome/Web: usa localhost automaticamente
-      return 'http://localhost:3000';
+      // Web: usa produção
+      return 'https://enord.app';
     } else {
-      // Mobile/APK: mantém comportamento original (emulador por padrão)
-      // O usuário pode alterar nas configurações do app se necessário
-      return 'http://10.0.2.2:3000';
+      // Mobile/APK: URL de produção
+      return 'https://enord.app';
     }
   }
 

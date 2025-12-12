@@ -29,9 +29,9 @@ Este guia detalha todos os passos necessários para fazer o app mobile funcionar
 
 ### Exemplo de estrutura:
 
-- **Domínio principal:** `ekklesia.com.br`
-- **API/Backend:** `api.ekklesia.com.br` (ou `ekklesia.com.br/api`)
-- **App Mobile:** Conecta em `https://api.ekklesia.com.br`
+- **Domínio principal:** `enord.app`
+- **API/Backend:** `enord.app`
+- **App Mobile:** Conecta em `https://enord.app`
 
 ---
 
@@ -254,10 +254,10 @@ Edite `mobile/lib/services/config_service.dart`:
 ```dart
 static String get _defaultApiUrl {
   if (kIsWeb) {
-    return 'https://api.ekklesia.com.br';  // HTTPS em produção
+    return 'https://enord.app';  // HTTPS em produção
   } else {
     // Mobile/APK: URL de produção
-    return 'https://api.ekklesia.com.br';  // HTTPS obrigatório
+    return 'https://enord.app';  // HTTPS obrigatório
   }
 }
 ```
@@ -278,7 +278,7 @@ Edite `mobile/android/app/src/main/res/xml/network_security_config.xml`:
     
     <!-- Permitir apenas o domínio de produção -->
     <domain-config cleartextTrafficPermitted="false">
-        <domain includeSubdomains="true">api.ekklesia.com.br</domain>
+        <domain includeSubdomains="true">enord.app</domain>
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>

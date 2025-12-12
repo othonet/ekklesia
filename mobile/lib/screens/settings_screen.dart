@@ -243,7 +243,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         hintText: 'http://exemplo.com:3000',
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.link),
-                        helperText: 'Exemplo: http://192.168.1.161:3000 ou https://api.ekklesia.com',
+                        helperText: 'Exemplo: https://enord.app',
                       ),
                       keyboardType: TextInputType.url,
                       textInputAction: TextInputAction.done,
