@@ -27,7 +27,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:all": "npm run validate",
-    "ci": "npm run validate"
+    "ci": "npm run validate",
+    "scan:routes": "tsx scripts/scan-routes.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
