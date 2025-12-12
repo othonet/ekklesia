@@ -181,6 +181,10 @@ jobs:
             echo "🗄️  Executando migrações..."
             npx prisma migrate deploy || echo "⚠️  Migrações podem ter falhado (normal se já aplicadas)"
             
+            # Executar seed (criar módulos e planos se não existirem)
+            echo "🌱 Executando seed (módulos e planos)..."
+            npm run db:seed || echo "⚠️  Seed pode ter falhado (normal se já foi executado)"
+            
             # Build da aplicação
             echo "🏗️  Fazendo build..."
             npm run build
