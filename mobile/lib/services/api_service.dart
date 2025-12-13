@@ -200,6 +200,30 @@ class ApiService {
     }
   }
 
+  /// Confirma ou recusa uma escala
+  Future<void> confirmSchedule(String scheduleId, bool confirmed, {String? declineReason}) async {
+    try {
+      final headers = await _authService.getAuthHeaders();
+      final response = await _dio.post(
+        ApiConfig.confirmSchedule(scheduleId),
+        data: {
+          'confirmed': confirmed,
+          if (declineReason != null && declineReason.isNotEmpty) 'declineReason': declineReason,
+        },
+        options: Options(headers: headers),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Erro ao confirmar escala');
+      }
+    } catch (e) {
+      if (e is DioException) {
+        throw _handleDioError(e);
+      }
+      throw Exception('Erro ao confirmar escala: ${e.toString()}');
+    }
+  }
+
   /// Busca eventos da igreja para o membro
   Future<List<EventInfo>> getEvents() async {
     try {

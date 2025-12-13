@@ -22,11 +22,19 @@ export async function POST(
 
     const resolvedParams = await Promise.resolve(params)
     const body = await request.json()
-    const { confirmed } = body
+    const { confirmed, declineReason } = body
 
     if (typeof confirmed !== 'boolean') {
       return NextResponse.json(
         { error: 'Parâmetro "confirmed" deve ser true ou false' },
+        { status: 400 }
+      )
+    }
+
+    // Se está recusando e forneceu motivo, validar
+    if (!confirmed && declineReason && declineReason.trim().length > 500) {
+      return NextResponse.json(
+        { error: 'O motivo da recusa não pode ter mais de 500 caracteres' },
         { status: 400 }
       )
     }
@@ -65,6 +73,7 @@ export async function POST(
       data: {
         confirmed,
         confirmedAt: confirmed ? new Date() : null,
+        declineReason: confirmed ? null : (declineReason?.trim() || null),
       },
       include: {
         schedule: {

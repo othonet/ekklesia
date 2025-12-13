@@ -75,20 +75,26 @@ export async function GET(request: NextRequest) {
     })
 
     // Transformar dados para o formato esperado pelo app mobile
-    const transformedSchedules = schedules.map((schedule) => ({
-      id: schedule.id,
-      ministryId: schedule.ministryId,
-      ministryName: schedule.ministry.name,
-      title: schedule.title,
-      description: schedule.description,
-      date: schedule.date,
-      startTime: schedule.startTime,
-      endTime: schedule.endTime,
-      location: schedule.location,
-      role: schedule.assignedMembers[0]?.role || schedule.assignedMembers[0]?.memberMinistry?.role || null,
-      status: schedule.active ? (schedule.date >= new Date() ? 'SCHEDULED' : 'COMPLETED') : 'CANCELLED',
-      createdAt: schedule.createdAt,
-    }))
+    const transformedSchedules = schedules.map((schedule) => {
+      const assignedMember = schedule.assignedMembers[0]
+      return {
+        id: schedule.id,
+        ministryId: schedule.ministryId,
+        ministryName: schedule.ministry.name,
+        title: schedule.title,
+        description: schedule.description,
+        date: schedule.date,
+        startTime: schedule.startTime,
+        endTime: schedule.endTime,
+        location: schedule.location,
+        role: assignedMember?.role || assignedMember?.memberMinistry?.role || null,
+        confirmed: assignedMember?.confirmed ?? false,
+        confirmedAt: assignedMember?.confirmedAt,
+        declineReason: assignedMember?.declineReason,
+        status: schedule.active ? (schedule.date >= new Date() ? 'SCHEDULED' : 'COMPLETED') : 'CANCELLED',
+        createdAt: schedule.createdAt,
+      }
+    })
 
     return NextResponse.json(
       transformedSchedules,

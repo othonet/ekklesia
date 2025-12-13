@@ -129,22 +129,56 @@ export async function authenticateMember(
   password: string
 ): Promise<{ member: any; token: string } | null> {
   try {
-    const member = await prisma.member.findUnique({
-      where: { email },
+    // Normalizar email para lowercase (garantir busca case-insensitive)
+    const normalizedEmail = email.trim().toLowerCase()
+    
+    // Tentar buscar com email normalizado primeiro
+    let member = await prisma.member.findUnique({
+      where: { email: normalizedEmail },
       include: { church: true },
     })
 
+    // Se não encontrou, fazer busca case-insensitive usando SQL raw
+    // Isso garante compatibilidade mesmo se o email estiver em maiúsculas no banco
+    if (!member) {
+      const members = await prisma.$queryRaw<Array<{
+        id: string
+        email: string | null
+        password: string | null
+        deletedAt: Date | null
+        churchId: string
+      }>>`
+        SELECT id, email, password, deletedAt, churchId
+        FROM members
+        WHERE LOWER(TRIM(email)) = LOWER(TRIM(${normalizedEmail}))
+        AND deletedAt IS NULL
+        LIMIT 1
+      `
+      
+      if (members && members.length > 0) {
+        const memberData = members[0]
+        // Buscar membro completo com relacionamentos
+        member = await prisma.member.findUnique({
+          where: { id: memberData.id },
+          include: { church: true },
+        })
+      }
+    }
+
     if (!member || member.deletedAt) {
+      console.log('Membro não encontrado ou deletado para email:', normalizedEmail)
       return null
     }
 
     if (!member.password) {
+      console.log('Membro não tem senha definida:', normalizedEmail)
       return null
     }
 
     const isValid = await verifyPassword(password, member.password)
 
     if (!isValid) {
+      console.log('Senha inválida para email:', normalizedEmail)
       return null
     }
 

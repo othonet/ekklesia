@@ -26,6 +26,9 @@ class ApiConfig {
   static const String memberSchedules = '/api/members/me/schedules';
   static const String memberEvents = '/api/members/me/events';
   
+  // Endpoint para confirmar/recusar escala
+  static String confirmSchedule(String scheduleId) => '/api/members/me/ministry-schedules/$scheduleId/confirm';
+  
   // Event attendance
   static String eventAttendance(String eventId) => '/api/members/me/events/$eventId/attendance';
   

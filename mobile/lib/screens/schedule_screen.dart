@@ -112,66 +112,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                             child: InkWell(
                               onTap: () {
                                 // Mostrar detalhes da escala
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: Text(schedule.title),
-                                    content: SingleChildScrollView(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          if (schedule.description != null) ...[
-                                            Text(
-                                              schedule.description!,
-                                              style: Theme.of(context).textTheme.bodyMedium,
-                                            ),
-                                            const SizedBox(height: 16),
-                                          ],
-                                          _buildDetailRow(
-                                            Icons.group,
-                                            'Ministério',
-                                            schedule.ministryName,
-                                          ),
-                                          if (schedule.role != null)
-                                            _buildDetailRow(
-                                              Icons.person,
-                                              'Função',
-                                              schedule.role!,
-                                            ),
-                                          _buildDetailRow(
-                                            Icons.calendar_today,
-                                            'Data',
-                                            DateFormat('dd/MM/yyyy').format(schedule.date),
-                                          ),
-                                          if (schedule.startTime != null)
-                                            _buildDetailRow(
-                                              Icons.access_time,
-                                              'Horário',
-                                              '${schedule.startTime}${schedule.endTime != null ? ' - ${schedule.endTime}' : ''}',
-                                            ),
-                                          if (schedule.location != null)
-                                            _buildDetailRow(
-                                              Icons.location_on,
-                                              'Local',
-                                              schedule.location!,
-                                            ),
-                                          _buildDetailRow(
-                                            Icons.info,
-                                            'Status',
-                                            _getStatusLabel(schedule.status),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        child: const Text('Fechar'),
-                                      ),
-                                    ],
-                                  ),
-                                );
+                                _showScheduleDetails(context, schedule);
                               },
                               child: Padding(
                                 padding: const EdgeInsets.all(16),
@@ -188,6 +129,25 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                             ),
                                           ),
                                         ),
+                                        if (schedule.confirmed)
+                                          Icon(
+                                            Icons.check_circle,
+                                            color: Colors.green,
+                                            size: 20,
+                                          )
+                                        else if (schedule.declineReason != null)
+                                          Icon(
+                                            Icons.cancel,
+                                            color: Colors.red,
+                                            size: 20,
+                                          )
+                                        else if (!isPast)
+                                          Icon(
+                                            Icons.pending,
+                                            color: Colors.orange,
+                                            size: 20,
+                                          ),
+                                        const SizedBox(width: 8),
                                         Chip(
                                           label: Text(
                                             _getStatusLabel(schedule.status),
@@ -329,6 +289,291 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         return Colors.grey;
       default:
         return Colors.grey;
+    }
+  }
+
+  void _showScheduleDetails(BuildContext context, Schedule schedule) {
+    final isPast = schedule.date.isBefore(DateTime.now());
+    final canConfirm = !isPast && schedule.status != 'CANCELLED';
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(schedule.title),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (schedule.description != null) ...[
+                Text(
+                  schedule.description!,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 16),
+              ],
+              _buildDetailRow(
+                Icons.group,
+                'Ministério',
+                schedule.ministryName,
+              ),
+              if (schedule.role != null)
+                _buildDetailRow(
+                  Icons.person,
+                  'Função',
+                  schedule.role!,
+                ),
+              _buildDetailRow(
+                Icons.calendar_today,
+                'Data',
+                DateFormat('dd/MM/yyyy').format(schedule.date),
+              ),
+              if (schedule.startTime != null)
+                _buildDetailRow(
+                  Icons.access_time,
+                  'Horário',
+                  '${schedule.startTime}${schedule.endTime != null ? ' - ${schedule.endTime}' : ''}',
+                ),
+              if (schedule.location != null)
+                _buildDetailRow(
+                  Icons.location_on,
+                  'Local',
+                  schedule.location!,
+                ),
+              _buildDetailRow(
+                Icons.info,
+                'Status',
+                _getStatusLabel(schedule.status),
+              ),
+              const SizedBox(height: 16),
+              // Status de confirmação
+              if (schedule.confirmed)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Confirmada',
+                          style: TextStyle(color: Colors.green[700], fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else if (schedule.declineReason != null)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.cancel, color: Colors.red, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Recusada',
+                            style: TextStyle(color: Colors.red[700], fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      if (schedule.declineReason!.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          'Motivo: ${schedule.declineReason}',
+                          style: TextStyle(color: Colors.red[700], fontSize: 12),
+                        ),
+                      ],
+                    ],
+                  ),
+                )
+              else if (canConfirm)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.pending, color: Colors.orange, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Aguardando confirmação',
+                          style: TextStyle(color: Colors.orange[700], fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Fechar'),
+          ),
+          if (canConfirm && !schedule.confirmed && schedule.declineReason == null) ...[
+            // Botão para recusar
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _showDeclineDialog(context, schedule);
+              },
+              child: const Text('Não Posso', style: TextStyle(color: Colors.red)),
+            ),
+            // Botão para confirmar
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _confirmSchedule(context, schedule, true);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Confirmar'),
+            ),
+          ] else if (canConfirm && (schedule.confirmed || schedule.declineReason != null)) ...[
+            // Botão para alterar confirmação
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                if (schedule.confirmed) {
+                  _showDeclineDialog(context, schedule);
+                } else {
+                  _confirmSchedule(context, schedule, true);
+                }
+              },
+              child: const Text('Alterar'),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _showDeclineDialog(BuildContext context, Schedule schedule) {
+    final reasonController = TextEditingController();
+    bool includeReason = false;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Recusar Escala'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Você não poderá comparecer a esta escala?'),
+                const SizedBox(height: 16),
+                CheckboxListTile(
+                  title: const Text('Informar motivo (opcional)'),
+                  value: includeReason,
+                  onChanged: (value) {
+                    setState(() {
+                      includeReason = value ?? false;
+                    });
+                  },
+                  controlAffinity: ListTileControlAffinity.leading,
+                ),
+                if (includeReason) ...[
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: reasonController,
+                    decoration: const InputDecoration(
+                      labelText: 'Motivo',
+                      hintText: 'Ex: Estarei viajando, compromisso familiar, etc.',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 3,
+                    maxLength: 500,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _confirmSchedule(
+                  context,
+                  schedule,
+                  false,
+                  declineReason: includeReason ? reasonController.text.trim() : null,
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Recusar'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmSchedule(
+    BuildContext context,
+    Schedule schedule,
+    bool confirmed, {
+    String? declineReason,
+  }) async {
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final apiService = ApiService(authService: authProvider.authService);
+
+      await apiService.confirmSchedule(
+        schedule.id,
+        confirmed,
+        declineReason: declineReason,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            confirmed
+                ? 'Escala confirmada com sucesso!'
+                : 'Escala recusada com sucesso!',
+          ),
+          backgroundColor: confirmed ? Colors.green : Colors.orange,
+        ),
+      );
+
+      // Recarregar escalas
+      await _loadSchedules();
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao ${confirmed ? 'confirmar' : 'recusar'} escala: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 }

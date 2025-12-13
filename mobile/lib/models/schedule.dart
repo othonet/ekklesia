@@ -15,6 +15,9 @@ class Schedule {
   final String? location;
   final String? role;
   final String status;
+  final bool confirmed;
+  final DateTime? confirmedAt;
+  final String? declineReason;
   final DateTime createdAt;
 
   Schedule({
@@ -29,6 +32,9 @@ class Schedule {
     this.location,
     this.role,
     required this.status,
+    this.confirmed = false,
+    this.confirmedAt,
+    this.declineReason,
     required this.createdAt,
   });
 

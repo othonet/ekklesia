@@ -98,6 +98,7 @@ export async function GET(request: NextRequest) {
       role: sm.role,
       confirmed: sm.confirmed,
       confirmedAt: sm.confirmedAt,
+      declineReason: sm.declineReason,
     }))
 
     // Filtrar apenas escalas futuras ou do último mês

@@ -32,6 +32,8 @@ interface MinistrySchedule {
     }
     role: string | null
     confirmed: boolean
+    confirmedAt: string | null
+    declineReason: string | null
   }>
 }
 
@@ -234,22 +236,36 @@ export default function MinistrySchedulesPage() {
                         {schedule.assignedMembers.map((member) => (
                           <div
                             key={member.id}
-                            className="flex items-center justify-between p-2 border rounded"
+                            className="p-2 border rounded space-y-2"
                           >
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">
-                                {member.memberMinistry.member.name}
-                              </span>
-                              {member.role && (
-                                <span className="text-xs text-muted-foreground">
-                                  ({member.role})
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">
+                                  {member.memberMinistry.member.name}
                                 </span>
+                                {member.role && (
+                                  <span className="text-xs text-muted-foreground">
+                                    ({member.role})
+                                  </span>
+                                )}
+                              </div>
+                              {member.confirmed ? (
+                                <div className="flex items-center gap-2">
+                                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                  <span className="text-xs text-green-600 font-medium">Confirmado</span>
+                                </div>
+                              ) : member.declineReason ? (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-red-600 font-medium">Recusado</span>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">Pendente</span>
                               )}
                             </div>
-                            {member.confirmed ? (
-                              <CheckCircle2 className="h-4 w-4 text-green-600" />
-                            ) : (
-                              <span className="text-xs text-muted-foreground">Pendente</span>
+                            {member.declineReason && (
+                              <div className="pl-4 border-l-2 border-red-200 bg-red-50 p-2 rounded text-xs text-red-700">
+                                <span className="font-medium">Motivo:</span> {member.declineReason}
+                              </div>
                             )}
                           </div>
                         ))}

@@ -218,6 +218,7 @@ model MinistryScheduleMember {
   role        String?  // Função específica nesta escala (ex: "Líder", "Ajudante")
   confirmed   Boolean   @default(false) // Se o membro confirmou presença
   confirmedAt DateTime?
+  declineReason String? @db.Text // Motivo da recusa (opcional)
   notified    Boolean   @default(false) // Se o membro foi notificado
   notifiedAt  DateTime?
   

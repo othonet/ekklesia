@@ -40,14 +40,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('Tentativa de login de membro para:', email)
+    // Normalizar email (trim e lowercase)
+    const normalizedEmail = email.trim().toLowerCase()
+    console.log('Tentativa de login de membro para:', normalizedEmail)
 
-    const result = await authenticateMember(email, password)
+    const result = await authenticateMember(normalizedEmail, password)
 
     if (!result) {
-      console.log('Credenciais inválidas para membro:', email)
+      console.log('Credenciais inválidas para membro:', normalizedEmail)
       return NextResponse.json(
-        { error: 'Credenciais inválidas' },
+        { error: 'Email ou senha inválidos' },
         { 
           status: 401,
           headers: corsHeaders,
