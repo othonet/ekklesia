@@ -145,9 +145,28 @@ export default function MinistrySchedulesPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Excluir esta escala?')) return
-    // Implementar DELETE quando a API estiver pronta
-    console.log('Deletar escala:', id)
+    if (!confirm('Tem certeza que deseja excluir esta escala? Esta ação não pode ser desfeita.')) return
+    
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/ministries/${params.id}/schedules/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        // Recarregar a lista de escalas
+        await fetchData()
+      } else {
+        const error = await response.json()
+        alert(`Erro ao excluir escala: ${error.error || 'Erro desconhecido'}`)
+      }
+    } catch (error) {
+      console.error('Erro ao excluir escala:', error)
+      alert('Erro ao excluir escala. Tente novamente.')
+    }
   }
 
   const formatDate = (dateString: string) => {
