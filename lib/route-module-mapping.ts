@@ -189,12 +189,40 @@ export const ROUTE_MODULE_MAP: Record<string, RouteModuleInfo> = {
     icon: 'UserCheck',
     requiresAuth: true,
   },
+
+  // Mapeamento de rotas de API para módulos
+  '/api/members': { module: 'MEMBERS', description: 'API de membros', icon: 'Users', requiresAuth: true },
+  '/api/ministries': { module: 'MINISTRIES', description: 'API de ministérios', icon: 'Building2', requiresAuth: true },
+  '/api/finances': { module: 'FINANCES', description: 'API de finanças', icon: 'DollarSign', requiresAuth: true },
+  '/api/donations': { module: 'FINANCES', description: 'API de doações', icon: 'DollarSign', requiresAuth: true },
+  '/api/events': { module: 'EVENTS', description: 'API de eventos', icon: 'Calendar', requiresAuth: true },
+  '/api/courses': { module: 'COURSES', description: 'API de cursos', icon: 'BookOpen', requiresAuth: true },
+  '/api/certificates': { module: 'CERTIFICATES', description: 'API de certificados', icon: 'Award', requiresAuth: true },
+  '/api/assets': { module: 'ASSETS', description: 'API de patrimônio', icon: 'Package', requiresAuth: true },
+  '/api/analytics': { module: 'ANALYTICS', description: 'API de analytics', icon: 'BarChart3', requiresAuth: true },
+  '/api/pastoral': { module: 'PASTORAL', description: 'API de acompanhamento pastoral', icon: 'Heart', requiresAuth: true },
 }
 
 /**
- * Obtém o módulo associado a uma rota
+ * Obtém o módulo associado a uma rota (página ou API)
  */
 export function getModuleForRoute(route: string): string | null {
+  // Verificar rota exata primeiro
+  if (ROUTE_MODULE_MAP[route]) {
+    return ROUTE_MODULE_MAP[route].module
+  }
+  
+  // Para rotas de API, verificar prefixos
+  if (route.startsWith('/api/')) {
+    // Verificar prefixos de API
+    for (const [routePattern, info] of Object.entries(ROUTE_MODULE_MAP)) {
+      if (routePattern.startsWith('/api/') && route.startsWith(routePattern)) {
+        return info.module
+      }
+    }
+  }
+  
+  // Usar função getRouteInfo para rotas de páginas
   const info = getRouteInfo(route)
   return info?.module || null
 }

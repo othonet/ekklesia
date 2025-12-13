@@ -116,3 +116,39 @@ export function createSuccessResponse<T>(
 ): NextResponse {
   return NextResponse.json(data, { status })
 }
+
+/**
+ * Verifica se o módulo está ativo para a igreja do usuário atual
+ * Retorna erro se o módulo não estiver ativo
+ */
+export async function checkModuleAccess(
+  request: NextRequest,
+  moduleKey: string
+): Promise<NextResponse | null> {
+  const user = getCurrentUser(request)
+  
+  if (!user || !user.churchId) {
+    return null // Deixa outras verificações tratarem
+  }
+
+  try {
+    const { hasModuleAccess } = await import('@/lib/module-permissions')
+    const hasAccess = await hasModuleAccess(user.churchId, moduleKey as any)
+    
+    if (!hasAccess) {
+      return NextResponse.json(
+        { 
+          error: 'Módulo não disponível no seu plano. Entre em contato com o administrador.',
+          module: moduleKey,
+          blocked: true,
+        },
+        { status: 403 }
+      )
+    }
+  } catch (error) {
+    console.error('Erro ao verificar acesso ao módulo:', error)
+    // Em caso de erro, não bloquear (fail open)
+  }
+
+  return null
+}

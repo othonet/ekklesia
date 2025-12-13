@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCurrentUser, validateRequest, createErrorResponse, createSuccessResponse, checkSystemEnabled } from '@/lib/api-helpers'
+import { getCurrentUser, validateRequest, createErrorResponse, createSuccessResponse, checkSystemEnabled, checkModuleAccess } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
 import { encrypt } from '@/lib/encryption'
 import { notifyConsentRequired } from '@/lib/notifications'
@@ -11,6 +11,10 @@ export async function GET(request: NextRequest) {
     // Verificar se o sistema está habilitado
     const systemCheck = await checkSystemEnabled(request)
     if (systemCheck) return systemCheck
+
+    // Verificar se o módulo MEMBERS está ativo
+    const moduleCheck = await checkModuleAccess(request, 'MEMBERS')
+    if (moduleCheck) return moduleCheck
 
     const user = getCurrentUser(request)
     
@@ -97,6 +101,14 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Verificar se o sistema está habilitado
+    const systemCheck = await checkSystemEnabled(request)
+    if (systemCheck) return systemCheck
+
+    // Verificar se o módulo MEMBERS está ativo
+    const moduleCheck = await checkModuleAccess(request, 'MEMBERS')
+    if (moduleCheck) return moduleCheck
+
     const user = getCurrentUser(request)
     
     if (!user || !user.churchId) {

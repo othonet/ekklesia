@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCurrentUser } from '@/lib/api-helpers'
+import { getCurrentUser, checkModuleAccess } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
+    // Verificar se o módulo MINISTRIES está ativo
+    const moduleCheck = await checkModuleAccess(request, 'MINISTRIES')
+    if (moduleCheck) return moduleCheck
+
     const user = getCurrentUser(request)
     
     if (!user || !user.churchId) {
@@ -40,6 +44,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Verificar se o módulo MINISTRIES está ativo
+    const moduleCheck = await checkModuleAccess(request, 'MINISTRIES')
+    if (moduleCheck) return moduleCheck
+
     const user = getCurrentUser(request)
     
     if (!user || !user.churchId) {

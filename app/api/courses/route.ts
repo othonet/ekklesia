@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCurrentUser } from '@/lib/api-helpers'
+import { getCurrentUser, checkModuleAccess } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
 import { checkPermission } from '@/lib/permissions-helpers'
 
 export async function GET(request: NextRequest) {
   try {
+    // Verificar se o módulo COURSES está ativo
+    const moduleCheck = await checkModuleAccess(request, 'COURSES')
+    if (moduleCheck) return moduleCheck
+
     const user = getCurrentUser(request)
     if (!user || !user.churchId) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
@@ -28,6 +32,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Verificar se o módulo COURSES está ativo
+    const moduleCheck = await checkModuleAccess(request, 'COURSES')
+    if (moduleCheck) return moduleCheck
+
     const user = getCurrentUser(request)
     if (!user || !user.churchId) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })

@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCurrentUser, validateRequest, createErrorResponse, createSuccessResponse } from '@/lib/api-helpers'
+import { getCurrentUser, validateRequest, createErrorResponse, createSuccessResponse, checkModuleAccess } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
 import { createFinanceSchema } from '@/lib/validations'
 import { checkPermission } from '@/lib/permissions-helpers'
 
 export async function GET(request: NextRequest) {
   try {
+    // Verificar se o módulo FINANCES está ativo
+    const moduleCheck = await checkModuleAccess(request, 'FINANCES')
+    if (moduleCheck) return moduleCheck
+
     const user = getCurrentUser(request)
     if (!user || !user.churchId) {
       return createErrorResponse('Não autorizado', 401)
@@ -68,6 +72,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Verificar se o módulo FINANCES está ativo
+    const moduleCheck = await checkModuleAccess(request, 'FINANCES')
+    if (moduleCheck) return moduleCheck
+
     const user = getCurrentUser(request)
     if (!user || !user.churchId) {
       return createErrorResponse('Não autorizado', 401)

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCurrentUser, validateRequest, createErrorResponse, createSuccessResponse } from '@/lib/api-helpers'
+import { getCurrentUser, validateRequest, createErrorResponse, createSuccessResponse, checkModuleAccess } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
 import { createAssetSchema } from '@/lib/validations'
 import { createAuditLog } from '@/lib/audit'
@@ -7,6 +7,10 @@ import { checkPermission } from '@/lib/permissions-helpers'
 
 export async function GET(request: NextRequest) {
   try {
+    // Verificar se o módulo ASSETS está ativo
+    const moduleCheck = await checkModuleAccess(request, 'ASSETS')
+    if (moduleCheck) return moduleCheck
+
     const user = getCurrentUser(request)
     
     if (!user || !user.churchId) {
@@ -91,6 +95,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Verificar se o módulo ASSETS está ativo
+    const moduleCheck = await checkModuleAccess(request, 'ASSETS')
+    if (moduleCheck) return moduleCheck
+
     const user = getCurrentUser(request)
     
     if (!user || !user.churchId) {

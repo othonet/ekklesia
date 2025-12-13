@@ -172,6 +172,12 @@ export async function middleware(request: NextRequest) {
     const churchToken = request.cookies.get('church_token')?.value
     if (!churchToken) {
       console.log('[TENANT] Acesso negado ao dashboard - sem church_token')
+      if (isApiDashboard) {
+        return NextResponse.json(
+          { error: 'Não autorizado' },
+          { status: 401 }
+        )
+      }
       return NextResponse.redirect(new URL('/login', request.url))
     }
   }
@@ -206,6 +212,47 @@ export async function middleware(request: NextRequest) {
     if (!allowedRoles.includes(payload.role)) {
       console.log('[TENANT] Acesso negado - role não permitido', payload.role)
       return NextResponse.redirect(new URL('/login', request.url))
+    }
+
+    // Verificar se o módulo da rota está ativo para a igreja
+    if (payload.churchId) {
+      try {
+        const { getModuleForRoute } = await import('@/lib/route-module-mapping')
+        const { hasModuleAccess } = await import('@/lib/module-permissions')
+        
+        const moduleKey = getModuleForRoute(request.nextUrl.pathname)
+        
+        // Se a rota requer um módulo específico, verificar se está ativo
+        if (moduleKey && moduleKey !== 'DASHBOARD' && moduleKey !== 'LEADERSHIP') {
+          const hasAccess = await hasModuleAccess(payload.churchId, moduleKey as any)
+          
+          if (!hasAccess) {
+            console.log('[TENANT] Acesso negado - módulo não ativo', {
+              path: request.nextUrl.pathname,
+              module: moduleKey,
+              churchId: payload.churchId,
+              user: payload.email
+            })
+            
+            // Para APIs, retornar JSON. Para páginas, redirecionar
+            if (isApiDashboard) {
+              return NextResponse.json(
+                { 
+                  error: 'Módulo não disponível no seu plano. Entre em contato com o administrador.',
+                  module: moduleKey,
+                  blocked: true,
+                },
+                { status: 403 }
+              )
+            }
+            
+            return NextResponse.redirect(new URL('/dashboard?error=module_not_available', request.url))
+          }
+        }
+      } catch (error) {
+        // Se houver erro ao verificar módulo, logar mas não bloquear (fail open para não quebrar o sistema)
+        console.error('[TENANT] Erro ao verificar acesso ao módulo:', error)
+      }
     }
   }
 
