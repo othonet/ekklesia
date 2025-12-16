@@ -14,6 +14,7 @@ import { toast } from '@/hooks/use-toast'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useCache } from '@/hooks/use-cache'
 import { useDebounce } from '@/hooks/use-debounce'
+import { useModuleAccessGuard } from '@/hooks/use-module-access-guard'
 
 interface Member {
   id: string
@@ -28,6 +29,7 @@ interface Member {
 export default function MembersPage() {
   const router = useRouter()
   const { fetchWithAuth } = useApi()
+  const { loading: moduleLoading } = useModuleAccessGuard('MEMBERS')
   const [search, setSearch] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedMember, setSelectedMember] = useState<Member | null>(null)
@@ -79,6 +81,17 @@ export default function MembersPage() {
       setPage(1)
     }
   }, [debouncedSearch])
+
+  // Não renderizar enquanto verifica acesso ao módulo
+  if (moduleLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </DashboardLayout>
+    )
+  }
 
   const fetchMembers = async () => {
     await refresh()

@@ -209,7 +209,9 @@ export const ROUTE_MODULE_MAP: Record<string, RouteModuleInfo> = {
 export function getModuleForRoute(route: string): string | null {
   // Verificar rota exata primeiro
   if (ROUTE_MODULE_MAP[route]) {
-    return ROUTE_MODULE_MAP[route].module
+    const module = ROUTE_MODULE_MAP[route].module
+    console.log('[getModuleForRoute] Módulo encontrado (rota exata)', { route, module })
+    return module
   }
   
   // Para rotas de API, verificar prefixos
@@ -217,6 +219,7 @@ export function getModuleForRoute(route: string): string | null {
     // Verificar prefixos de API
     for (const [routePattern, info] of Object.entries(ROUTE_MODULE_MAP)) {
       if (routePattern.startsWith('/api/') && route.startsWith(routePattern)) {
+        console.log('[getModuleForRoute] Módulo encontrado (prefixo API)', { route, routePattern, module: info.module })
         return info.module
       }
     }
@@ -224,7 +227,15 @@ export function getModuleForRoute(route: string): string | null {
   
   // Usar função getRouteInfo para rotas de páginas
   const info = getRouteInfo(route)
-  return info?.module || null
+  const module = info?.module || null
+  
+  if (module) {
+    console.log('[getModuleForRoute] Módulo encontrado (getRouteInfo)', { route, module })
+  } else {
+    console.log('[getModuleForRoute] Nenhum módulo encontrado para rota', { route })
+  }
+  
+  return module
 }
 
 /**
@@ -239,20 +250,41 @@ export function getRouteInfo(route: string): RouteModuleInfo | null {
   // Verificar rotas com parâmetros dinâmicos
   for (const [routePattern, info] of Object.entries(ROUTE_MODULE_MAP)) {
     // Converter padrão de rota para regex
+    // Exemplo: /dashboard/members/[id] -> ^\/dashboard\/members\/[^/]+$
     const regexPattern = routePattern
       .replace(/\[([^\]]+)\]/g, '[^/]+') // [id] -> [^/]+
       .replace(/\//g, '\\/') // / -> \/
     
-    const regex = new RegExp(`^${regexPattern}$`)
-    if (regex.test(route)) {
-      return info
+    try {
+      const regex = new RegExp(`^${regexPattern}$`)
+      if (regex.test(route)) {
+        return info
+      }
+    } catch (error) {
+      // Se houver erro ao criar regex, pular este padrão
+      console.warn(`[getRouteInfo] Erro ao criar regex para padrão: ${routePattern}`, error)
+      continue
     }
   }
   
-  // Verificar prefixos de rota
-  for (const [routePattern, info] of Object.entries(ROUTE_MODULE_MAP)) {
-    if (route.startsWith(routePattern)) {
-      return info
+  // Verificar prefixos de rota (apenas para rotas que não são APIs)
+  // APIs já foram verificadas em getModuleForRoute
+  if (!route.startsWith('/api/')) {
+    // Ordenar rotas por tamanho (mais específicas primeiro) para evitar correspondências incorretas
+    const sortedRoutes = Object.entries(ROUTE_MODULE_MAP)
+      .filter(([pattern]) => !pattern.startsWith('/api/'))
+      .sort(([a], [b]) => b.length - a.length) // Rotas mais longas primeiro
+    
+    for (const [routePattern, info] of sortedRoutes) {
+      // Verificar se a rota começa com o padrão
+      // Mas evitar correspondências muito genéricas (ex: /dashboard correspondendo a tudo)
+      if (route.startsWith(routePattern)) {
+        // Verificar se é uma correspondência exata ou se o próximo caractere é / ou fim da string
+        const nextChar = route[routePattern.length]
+        if (!nextChar || nextChar === '/') {
+          return info
+        }
+      }
     }
   }
   

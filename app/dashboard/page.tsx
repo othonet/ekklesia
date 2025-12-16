@@ -1,13 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { DashboardLayout } from '@/components/dashboard-layout'
-import { Users, Building2, Calendar, DollarSign, TrendingUp, TrendingDown, ArrowRight, Activity, Cake, Gift } from 'lucide-react'
+import { Users, Building2, Calendar, DollarSign, TrendingUp, TrendingDown, ArrowRight, Activity, Cake, Gift, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 import { useCache } from '@/hooks/use-cache'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
 interface DashboardStats {
   members: number
@@ -54,6 +56,9 @@ interface BirthdayMember {
 }
 
 export default function DashboardPage() {
+  const searchParams = useSearchParams()
+  const error = searchParams.get('error')
+  
   // Cache de estatísticas do dashboard
   const { data: statsData, loading: statsLoading, refresh: refreshStats } = useCache<DashboardStats>(
     'dashboard_stats',
@@ -175,6 +180,17 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-bold">Painel</h1>
           <p className="text-muted-foreground">Visão geral do sistema</p>
         </div>
+
+        {error === 'module_not_available' && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Módulo não disponível</AlertTitle>
+            <AlertDescription>
+              O módulo que você tentou acessar não está disponível no seu plano atual. 
+              Entre em contato com o administrador da plataforma para ativar este módulo.
+            </AlertDescription>
+          </Alert>
+        )}
 
         {loading ? (
           <div className="flex items-center justify-center py-12">
