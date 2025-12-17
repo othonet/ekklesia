@@ -209,9 +209,9 @@ export const ROUTE_MODULE_MAP: Record<string, RouteModuleInfo> = {
 export function getModuleForRoute(route: string): string | null {
   // Verificar rota exata primeiro
   if (ROUTE_MODULE_MAP[route]) {
-    const module = ROUTE_MODULE_MAP[route].module
-    console.log('[getModuleForRoute] Módulo encontrado (rota exata)', { route, module })
-    return module
+    const moduleKey = ROUTE_MODULE_MAP[route].module
+    console.log('[getModuleForRoute] Módulo encontrado (rota exata)', { route, module: moduleKey })
+    return moduleKey
   }
   
   // Para rotas de API, verificar prefixos
@@ -227,15 +227,15 @@ export function getModuleForRoute(route: string): string | null {
   
   // Usar função getRouteInfo para rotas de páginas
   const info = getRouteInfo(route)
-  const module = info?.module || null
+  const moduleKey = info?.module || null
   
-  if (module) {
-    console.log('[getModuleForRoute] Módulo encontrado (getRouteInfo)', { route, module })
+  if (moduleKey) {
+    console.log('[getModuleForRoute] Módulo encontrado (getRouteInfo)', { route, module: moduleKey })
   } else {
     console.log('[getModuleForRoute] Nenhum módulo encontrado para rota', { route })
   }
   
-  return module
+  return moduleKey
 }
 
 /**
