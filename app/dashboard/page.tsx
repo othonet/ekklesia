@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -56,8 +55,15 @@ interface BirthdayMember {
 }
 
 export default function DashboardPage() {
-  const searchParams = useSearchParams()
-  const error = searchParams.get('error')
+  const [error, setError] = useState<string | null>(null)
+  
+  // Ler parâmetro de erro da URL
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      setError(params.get('error'))
+    }
+  }, [])
   
   // Cache de estatísticas do dashboard
   const { data: statsData, loading: statsLoading, refresh: refreshStats } = useCache<DashboardStats>(

@@ -14,12 +14,15 @@ export function useModuleAccessGuard(moduleKey: string) {
   const [hasAccess, setHasAccess] = useState<boolean | null>(null)
   const [loading, setLoading] = useState(true)
   const { modules } = useChurchModules()
+  
+  // Usar useMemo para evitar recriações desnecessárias
   const user = getUserFromToken()
+  const churchId = user?.churchId
 
   useEffect(() => {
     async function checkAccess() {
       try {
-        if (!user || !user.churchId) {
+        if (!churchId) {
           setHasAccess(false)
           setLoading(false)
           return
@@ -37,7 +40,7 @@ export function useModuleAccessGuard(moduleKey: string) {
           // Se não encontrou na lista, verificar via API
           const token = localStorage.getItem('token')
           const response = await fetch(
-            `/api/modules/check?churchId=${user.churchId}&moduleKey=${moduleKey}`,
+            `/api/modules/check?churchId=${churchId}&moduleKey=${moduleKey}`,
             {
               headers: { 'Authorization': `Bearer ${token}` },
             }
@@ -59,7 +62,7 @@ export function useModuleAccessGuard(moduleKey: string) {
     }
 
     checkAccess()
-  }, [moduleKey, modules, user])
+  }, [moduleKey, modules, churchId])
 
   useEffect(() => {
     if (!loading && hasAccess === false) {
